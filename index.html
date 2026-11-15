@@ -12,67 +12,155 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%;background:#000;color:#eee;font:15px/1.35 -apple-system,system-ui,Segoe UI,Roboto,sans-serif;overflow:hidden;touch-action:manipulation}
-  #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 44px) 0 calc(env(safe-area-inset-bottom) + 110px)}
-  canvas{display:block;background:#111}
-  #top{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 8px) 14px 8px;display:flex;justify-content:space-between;align-items:center;font-variant-numeric:tabular-nums;font-size:13px;color:#bbb;pointer-events:none}
+  html,body{margin:0;height:100%;background:#000;color:#eee;font:15px/1.35 -apple-system,system-ui,Segoe UI,Roboto,sans-serif;overflow:hidden;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+  #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 64px) 0 calc(env(safe-area-inset-bottom) + 200px)}
+  #wrap{position:relative;transition:opacity .08s}
+  canvas#c{display:block;background:#111}
+  canvas#ov{position:absolute;inset:0;width:100%;height:100%;display:none}
+  #top{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 8px) 14px 4px;display:flex;justify-content:space-between;align-items:center;font-variant-numeric:tabular-nums;font-size:13px;color:#bbb;pointer-events:none}
   #top b{color:#fff}
-  #bottom{position:fixed;left:0;right:0;bottom:0;padding:0 24px calc(env(safe-area-inset-bottom) + 18px);display:flex;align-items:center;justify-content:space-between}
-  #shutter{width:76px;height:76px;border-radius:50%;border:4px solid #fff;background:#fff;box-shadow:inset 0 0 0 4px #000;cursor:pointer}
+  #top b.ok{color:#4cd964}
+  #rollGauge{position:fixed;top:calc(env(safe-area-inset-top) + 34px);left:50%;transform:translateX(-50%);width:140px;height:18px;pointer-events:none}
+  #tiltGauge{position:fixed;right:8px;top:50%;transform:translateY(-60%);width:18px;height:180px;pointer-events:none}
+  .gauge{background:rgba(255,255,255,.12);border-radius:9px}
+  .gauge .zone{position:absolute;background:rgba(76,217,100,.35);border-radius:9px}
+  .gauge .dot{position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 0 4px #000}
+  .gauge.ok .dot{background:#4cd964}
+  #rollGauge .zone{top:0;bottom:0;left:calc(50% - 9px);width:18px}
+  #rollGauge .dot{top:2px}
+  #tiltGauge .zone{left:0;right:0;top:calc(50% - 9px);height:18px}
+  #tiltGauge .dot{left:2px}
+  #rec{position:fixed;top:calc(env(safe-area-inset-top) + 58px);left:50%;transform:translateX(-50%);background:#d22;color:#fff;padding:4px 12px;border-radius:14px;font-size:14px;font-variant-numeric:tabular-nums;display:none;z-index:3}
+  #controls{position:fixed;left:0;right:0;bottom:0;padding:0 0 calc(env(safe-area-inset-bottom) + 16px)}
+  #presetBar{display:flex;gap:8px;overflow-x:auto;padding:0 16px 10px;scrollbar-width:none}
+  #presetBar::-webkit-scrollbar{display:none}
+  .chip{flex:none;padding:7px 14px;border-radius:16px;background:#222;color:#ddd;border:1px solid #333;font-size:13px;white-space:nowrap}
+  .chip.on{background:#f5c542;color:#000;border-color:#f5c542}
+  #modeRow{display:flex;align-items:center;justify-content:center;gap:14px;padding:0 16px 12px}
+  #modeSeg button{padding:6px 16px;font-size:13px;letter-spacing:.05em}
+  #timerBtn{padding:6px 12px;border-radius:14px;border:1px solid #333;background:#1c1c1c;color:#ddd;font-size:13px;min-width:62px}
+  #timerBtn.on{background:#f5c542;color:#000;border-color:#f5c542}
+  #bottom{display:flex;align-items:center;justify-content:space-between;padding:0 24px}
+  #shutter{width:76px;height:76px;border-radius:50%;border:4px solid #fff;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  #shutter i{display:block;width:60px;height:60px;border-radius:50%;background:#fff;transition:all .2s}
+  #shutter.video i{background:#e33}
+  #shutter.recording i{width:28px;height:28px;border-radius:6px;background:#e33}
   #shutter:active{transform:scale(.94)}
-  .round{width:48px;height:48px;border-radius:50%;border:0;background:#222;color:#fff;font-size:22px;cursor:pointer}
-  #panel{position:fixed;left:0;right:0;bottom:0;max-height:70%;overflow:auto;background:rgba(18,18,18,.97);border-radius:16px 16px 0 0;padding:16px 18px calc(env(safe-area-inset-bottom) + 18px);transform:translateY(105%);transition:transform .25s;z-index:5}
+  .round{width:48px;height:48px;border-radius:50%;border:0;background:#222;color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  #panel{position:fixed;left:0;right:0;bottom:0;max-height:78%;overflow:auto;background:rgba(18,18,18,.98);border-radius:16px 16px 0 0;padding:16px 18px calc(env(safe-area-inset-bottom) + 18px);transform:translateY(105%);transition:transform .25s;z-index:5}
   #panel.open{transform:none}
   #panel h3{margin:0 0 10px;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+  #panel h4{margin:22px 0 4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#777}
   .row{margin:14px 0}
   .row label{display:flex;justify-content:space-between;font-size:13px;color:#aaa;margin-bottom:6px}
   .row label span{color:#fff;font-variant-numeric:tabular-nums}
   input[type=range]{width:100%}
+  input[type=text]{flex:1;min-width:0;padding:10px;border-radius:10px;border:1px solid #333;background:#222;color:#fff;font-size:15px;user-select:text;-webkit-user-select:text}
   select,button.btn{width:100%;padding:10px;border-radius:10px;border:1px solid #333;background:#222;color:#fff;font-size:15px}
   .seg{display:flex;gap:6px}
   .seg button{flex:1;padding:9px;border-radius:9px;border:1px solid #333;background:#1c1c1c;color:#ccc;font-size:14px}
   .seg button.on{background:#fff;color:#000;border-color:#fff}
   .hint{font-size:12px;color:#888;margin-top:4px}
+  .plist{margin-top:8px}
+  .plist div{display:flex;justify-content:space-between;align-items:center;padding:8px 2px;border-bottom:1px solid #262626;font-size:14px}
+  .plist button{background:none;border:0;color:#f77;font-size:18px;padding:0 6px}
   #start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:30px;text-align:center;z-index:10;background:#000}
   #start h1{margin:0;font-size:28px}
   #start p{margin:0;color:#aaa;max-width:340px}
   #startBtn{padding:14px 34px;border-radius:30px;border:0;background:#fff;color:#000;font-size:17px;font-weight:600}
   #err{color:#f88;font-size:13px;max-width:340px}
-  #shot{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px)}
-  #shot img{max-width:100%;max-height:72vh;object-fit:contain;background:#111}
+  #shot{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px)}
+  #shot img,#shot video{max-width:100%;max-height:72vh;object-fit:contain;background:#111;display:none}
   #shot .btns{display:flex;gap:10px;width:100%;max-width:420px}
   #shot .btns > *{flex:1;text-align:center;text-decoration:none;padding:12px;border-radius:12px;background:#222;color:#fff;border:0;font-size:15px}
   #shot .btns .primary{background:#fff;color:#000;font-weight:600}
-  #shot small{color:#888}
-  #warn{position:fixed;top:calc(env(safe-area-inset-top) + 40px);left:50%;transform:translateX(-50%);background:#a33;color:#fff;padding:6px 12px;border-radius:8px;font-size:13px;display:none;z-index:4}
+  #warn{position:fixed;top:calc(env(safe-area-inset-top) + 90px);left:50%;transform:translateX(-50%);background:#a33;color:#fff;padding:6px 12px;border-radius:8px;font-size:13px;display:none;z-index:4}
+  #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 210px);transform:translateX(-50%);background:rgba(40,40,40,.95);color:#fff;padding:9px 16px;border-radius:18px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:30;max-width:92vw;text-align:center}
+  #toast.show{opacity:1}
+  #count{position:fixed;inset:0;display:none;align-items:center;justify-content:center;font-size:160px;font-weight:700;color:#fff;text-shadow:0 0 30px #000;pointer-events:none;z-index:15}
+  #calib{position:fixed;left:0;right:0;bottom:0;z-index:12;background:rgba(18,18,18,.97);padding:14px 16px calc(env(safe-area-inset-bottom) + 16px);display:none;border-radius:16px 16px 0 0}
+  #calib p{margin:0 0 12px;font-size:14px;color:#ccc}
+  #calib .btns{display:flex;gap:8px}
+  #calib .btns button{flex:1;padding:12px;border-radius:12px;border:0;background:#2a2a2a;color:#fff;font-size:15px}
+  #calib .btns button.primary{background:#fff;color:#000;font-weight:600}
+  #calib .btns button:disabled{opacity:.35}
 </style>
 </head>
 <body>
-<div id="stage"><canvas id="c"></canvas></div>
+<div id="stage"><div id="wrap"><canvas id="c"></canvas><canvas id="ov"></canvas></div></div>
 <div id="top"><div>Tilt <b id="tiltTxt">–</b> · Roll <b id="rollTxt">–</b></div><div id="camTxt"></div></div>
+<div id="rollGauge" class="gauge"><div class="zone"></div><div class="dot"></div></div>
+<div id="tiltGauge" class="gauge"><div class="zone"></div><div class="dot"></div></div>
+<div id="rec">● 00:00</div>
 <div id="warn">Hold the phone in portrait</div>
-<div id="bottom">
-  <label class="round" style="display:flex;align-items:center;justify-content:center" title="Load photo">🖼<input id="file" type="file" accept="image/*" hidden></label>
-  <button id="shutter" aria-label="Take photo"></button>
-  <button class="round" id="gear" aria-label="Settings">⚙︎</button>
+<div id="count"></div>
+<div id="toast"></div>
+
+<div id="controls">
+  <div id="presetBar"></div>
+  <div id="modeRow">
+    <button id="timerBtn">⏱ Off</button>
+    <div class="seg" id="modeSeg"><button data-v="photo">PHOTO</button><button data-v="video">VIDEO</button></div>
+  </div>
+  <div id="bottom">
+    <label class="round" title="Correct an existing photo">🖼<input id="file" type="file" accept="image/*" hidden></label>
+    <button id="shutter" aria-label="Shutter"><i></i></button>
+    <button class="round" id="gear" aria-label="Settings">⚙︎</button>
+  </div>
 </div>
 
 <div id="panel">
   <h3>Settings <button class="round" id="close" style="width:36px;height:36px;font-size:16px">✕</button></h3>
+
+  <h4>Presets</h4>
+  <div class="row">
+    <div style="display:flex;gap:8px"><input type="text" id="presetName" placeholder="Name, e.g. Walking 30°" maxlength="24"><button class="btn" id="presetSave" style="width:auto;padding:10px 16px">Save</button></div>
+    <div class="hint">Saves tilt, crop, framing and look-down. Tap a preset above the shutter to use it.</div>
+    <div class="plist" id="presetList"></div>
+  </div>
+
+  <h4>Camera</h4>
   <div class="row"><label>Camera</label><select id="camSel"></select>
-    <div class="hint">Pick the "Ultra Wide" / 0.5× camera if it isn't chosen automatically.</div></div>
+    <div class="hint">Pick the widest "facing back" camera (the 0.5× ultra-wide).</div></div>
+  <div class="row"><label>Lens field of view (diagonal) <span id="fovVal"></span></label><input id="fov" type="range" min="40" max="150" step="0.5"></div>
+  <div class="row"><button class="btn" id="calibBtn">📐 Auto-calibrate lens</button>
+    <div class="hint">Freeze a frame, tap along a vertical edge, and the app works out the lens figure for you.</div></div>
+
+  <h4>Correction</h4>
   <div class="row"><label>Tilt source</label>
     <div class="seg" id="tiltMode"><button data-v="sensor">Motion sensor</button><button data-v="fixed">Fixed angle</button></div></div>
-  <div class="row" id="fixedRow"><label>Fixed tilt down <span id="fixedVal"></span></label><input id="fixed" type="range" min="0" max="80" step="1"></div>
+  <div class="row"><label><span style="color:#aaa" id="fixedLbl">Target tilt</span> <span id="fixedVal"></span></label><input id="fixed" type="range" min="0" max="80" step="1">
+    <div class="hint" id="fixedHint"></div></div>
   <div class="row"><label>Chop off bottom <span id="cropVal"></span></label><input id="crop" type="range" min="0" max="70" step="1"></div>
-  <div class="row"><label>Lens field of view (diagonal) <span id="fovVal"></span></label><input id="fov" type="range" min="50" max="140" step="0.5">
-    <div class="hint">Calibrate: point at a door frame or building and adjust until its edges are perfectly vertical. Ultra-wide is usually 110–120°, main camera 75–80°.</div></div>
   <div class="row"><label>Framing</label>
     <div class="seg" id="framing"><button data-v="fill">Fill (no black edges)</button><button data-v="fit">Show everything</button></div></div>
   <div class="row"><label>Max look-down in output <span id="maxDownVal"></span></label><input id="maxDown" type="range" min="30" max="85" step="1">
     <div class="hint">Stops the area near your feet from being stretched enormously.</div></div>
+
+  <h4>Image</h4>
+  <div class="row"><label>Sharpen <span id="sharpenVal"></span></label><input id="sharpen" type="range" min="0" max="200" step="5"></div>
+  <div class="row"><label>Detail (local contrast) <span id="detailVal"></span></label><input id="detail" type="range" min="0" max="100" step="5">
+    <div class="hint">Applied live and baked into every saved photo and video. Sharpening also offsets the softness from straightening.</div></div>
+
+  <h4>Capture</h4>
+  <div class="row"><label>Level guide</label>
+    <div class="seg" id="level"><button data-v="on">On</button><button data-v="off">Off</button></div>
+    <div class="hint">Gauges turn green and the phone buzzes when you're at the target tilt and level.</div></div>
+  <div class="row"><label>After taking a photo or video</label>
+    <div class="seg" id="quickSave"><button data-v="off">Show preview</button><button data-v="on">Save instantly</button></div>
+    <div class="hint">Instant saves go to your Downloads folder (shows in Gallery under Download).</div></div>
+  <div class="row"><label>Video sound</label>
+    <div class="seg" id="sound"><button data-v="on">Record sound</button><button data-v="off">Silent</button></div></div>
+  <div class="hint">Shutter shortcuts: Bluetooth camera remotes and keyboards (Space / Enter) work. Phone volume buttons can't be used by web apps.</div>
+
+  <h4>Reset</h4>
   <div class="row"><button class="btn" id="resetBtn">Reset to defaults</button>
-    <div class="hint">Resets every setting and the lens calibration. Your chosen camera is kept.</div></div>
+    <div class="hint">Resets every setting and the lens calibration. Your camera choice and presets are kept.</div></div>
+</div>
+
+<div id="calib">
+  <p id="calibMsg"></p>
+  <div class="btns"><button id="calibUndo">Undo</button><button id="calibCancel">Cancel</button><button id="calibApply" class="primary">Apply</button></div>
 </div>
 
 <div id="start">
@@ -84,34 +172,47 @@
 
 <div id="shot">
   <img id="shotImg" alt="Captured photo">
-  <small>On iPhone you can also press and hold the image → Save to Photos</small>
-  <div class="btns"><button id="shareBtn" class="primary">Save / Share</button><a id="dlBtn" download="straightcam.jpg">Download</a><button id="backBtn">Back</button></div>
+  <video id="shotVid" controls playsinline loop></video>
+  <div class="btns"><button id="shareBtn" class="primary">Save / Share</button><button id="dlBtn">Download</button><button id="backBtn">Back</button></div>
 </div>
 
 <script>
 (() => {
 "use strict";
 const $ = id => document.getElementById(id);
-const canvas = $('c');
+const canvas = $('c'), ov = $('ov');
 const DEG = Math.PI / 180;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 // ---------- settings ----------
-const defaults = { tiltMode: 'sensor', fixed: 45, crop: 25, framing: 'fill', maxDown: 70, fovByCam: {}, camId: null };
-let S = { ...defaults };
+const CORE = { tiltMode: 'sensor', fixed: 45, crop: 25, framing: 'fill', maxDown: 70, sharpen: 80, detail: 40 };
+const defaults = { ...CORE, level: 'on', quickSave: 'on', sound: 'on', timer: 0, mode: 'photo', fovByCam: {}, camId: null,
+  presets: [{ name: 'Standard 45°', ...CORE }] };
+let S = JSON.parse(JSON.stringify(defaults));
 try { Object.assign(S, JSON.parse(localStorage.getItem('straightcam') || '{}')); } catch (e) {}
+if (!Array.isArray(S.presets)) S.presets = [];
+if (!S.fovByCam || typeof S.fovByCam !== 'object') S.fovByCam = {};
+if (S.sharpen == null) S.sharpen = CORE.sharpen; if (S.detail == null) S.detail = CORE.detail;
 const save = () => { try { localStorage.setItem('straightcam', JSON.stringify(S)); } catch (e) {} };
+
+let toastT;
+function toast(msg, ms = 1800) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), ms); }
+const buzz = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
 
 // ---------- WebGL ----------
 const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true, antialias: false });
-if (!gl) { $('err').textContent = 'WebGL is not available on this browser.'; }
+if (!gl) $('err').textContent = 'WebGL is not available on this browser.';
 const vs = `attribute vec2 p; varying vec2 uv; void main(){ uv = vec2((p.x+1.0)*0.5, (1.0-p.y)*0.5); gl_Position = vec4(p,0.0,1.0); }`;
 const fs = `precision highp float;
 varying vec2 uv;
 uniform sampler2D tex;
-uniform vec3 uR, uD, uF;     // virtual level camera axes expressed in source-camera coords
-uniform vec2 uAB;            // source half extents in tan units
-uniform float uBCrop;        // max b (tan units) kept in source
-uniform vec4 uRect;          // x0,y0,x1,y1 of output in tan units
+uniform vec3 uR, uD, uF;
+uniform vec2 uAB;
+uniform float uBCrop;
+uniform vec4 uRect;
+uniform vec2 uTexel;
+uniform float uSharp, uDetail;
+vec3 px(vec2 t){ return texture2D(tex, t).rgb; }
 void main(){
   float X = mix(uRect.x, uRect.z, uv.x);
   float Y = mix(uRect.y, uRect.w, uv.y);
@@ -120,19 +221,30 @@ void main(){
   float a = s.x / s.z, b = s.y / s.z;
   if (abs(a) > uAB.x || b < -uAB.y || b > uBCrop) { gl_FragColor = vec4(0.0,0.0,0.0,1.0); return; }
   vec2 t = vec2(a/uAB.x, b/uAB.y)*0.5 + 0.5;
-  gl_FragColor = vec4(texture2D(tex, t).rgb, 1.0);
+  vec3 c = px(t);
+  if (uSharp > 0.0 || uDetail > 0.0) {
+    vec2 o = uTexel;
+    // fine unsharp mask (1 px radius) = sharpening
+    vec3 b1 = (px(t+vec2(o.x,0.0)) + px(t-vec2(o.x,0.0)) + px(t+vec2(0.0,o.y)) + px(t-vec2(0.0,o.y))) * 0.25;
+    // wide unsharp mask (~5 px radius) = local contrast / "clarity" detail
+    vec2 w = o * 5.0;
+    vec3 b2 = (px(t+vec2(w.x,0.0)) + px(t-vec2(w.x,0.0)) + px(t+vec2(0.0,w.y)) + px(t-vec2(0.0,w.y))
+             + px(t+w*0.7) + px(t-w*0.7) + px(t+vec2(w.x,-w.y)*0.7) + px(t+vec2(-w.x,w.y)*0.7)) * 0.125;
+    c = c + uSharp * (c - b1) + uDetail * (c - b2);
+  }
+  gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
 }`;
 function sh(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
-let prog, U = {};
+const U = {};
 if (gl) {
-  prog = gl.createProgram();
+  const prog = gl.createProgram();
   gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs));
   gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs));
   gl.linkProgram(prog); gl.useProgram(prog);
   const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
   const loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-  ['tex','uR','uD','uF','uAB','uBCrop','uRect'].forEach(n => U[n] = gl.getUniformLocation(prog, n));
+  ['tex','uR','uD','uF','uAB','uBCrop','uRect','uTexel','uSharp','uDetail'].forEach(n => U[n] = gl.getUniformLocation(prog, n));
   const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -141,7 +253,7 @@ if (gl) {
   gl.uniform1i(U.tex, 0);
 }
 
-// ---------- source (camera video or loaded photo) ----------
+// ---------- source ----------
 const video = document.createElement('video');
 video.playsInline = true; video.muted = true; video.setAttribute('playsinline', '');
 let stream = null, srcEl = null, srcW = 0, srcH = 0, srcIsPhoto = false, srcDirty = true;
@@ -153,13 +265,12 @@ function getFov() { const v = S.fovByCam[camKey()]; return v || (isUltra ? 118 :
 async function startCamera(deviceId) {
   if (stream) stream.getTracks().forEach(t => t.stop());
   const base = { width: { ideal: 1920 }, height: { ideal: 1440 } };
-  const video_c = deviceId ? { ...base, deviceId: { exact: deviceId } } : { ...base, facingMode: { ideal: 'environment' } };
-  stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: video_c });
+  const vc = deviceId ? { ...base, deviceId: { exact: deviceId } } : { ...base, facingMode: { ideal: 'environment' } };
+  stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: vc });
   const track = stream.getVideoTracks()[0];
   const st = track.getSettings ? track.getSettings() : {};
   currentCamId = st.deviceId || deviceId || null;
   isUltra = /ultra|0\.5/i.test(track.label || '');
-  // Android: some phones expose the ultra-wide as zoom < 1 on the main logical camera
   try {
     const caps = track.getCapabilities ? track.getCapabilities() : {};
     if (caps.zoom && caps.zoom.min < 1) { await track.applyConstraints({ advanced: [{ zoom: caps.zoom.min }] }); isUltra = true; }
@@ -170,9 +281,7 @@ async function startCamera(deviceId) {
   $('camTxt').textContent = (track.label || 'Camera').replace(/camera2 \d+, /, '');
   syncUI();
 }
-
 async function chooseBestCamera() {
-  // first call gets permission so labels become visible
   await startCamera(S.camId || null);
   const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
   const sel = $('camSel'); sel.innerHTML = '';
@@ -183,8 +292,7 @@ async function chooseBestCamera() {
   }
   sel.value = currentCamId || '';
 }
-
-$('camSel').onchange = async e => { S.camId = e.target.value; save(); try { await startCamera(S.camId); } catch (err) { alertBox(err); } };
+$('camSel').onchange = async e => { S.camId = e.target.value; save(); try { await startCamera(S.camId); } catch (err) { toast('Could not open that camera'); } };
 
 $('file').onchange = e => {
   const f = e.target.files[0]; if (!f) return;
@@ -192,8 +300,7 @@ $('file').onchange = e => {
   img.onload = () => {
     if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
     srcEl = img; srcIsPhoto = true; srcDirty = true; isUltra = true;
-    if (S.tiltMode === 'sensor') S.tiltMode = 'fixed';
-    $('camTxt').textContent = 'Photo · tap ⚙︎ to set its tilt';
+    $('camTxt').textContent = 'Photo · set its tilt in ⚙︎';
     $('start').style.display = 'none';
     syncUI();
   };
@@ -201,81 +308,71 @@ $('file').onchange = e => {
 };
 
 // ---------- orientation ----------
-let down = [0, 1, 0];          // world-down vector in source camera coords (x right, y down, z forward)
-let sensorDown = null;
+let down = [0, 1, 0], sensorDown = null;
 function onOrient(e) {
   if (e.beta == null) return;
   const b = e.beta * DEG, g = (e.gamma || 0) * DEG;
-  // device: x right, y up, z out of screen. Camera: x right, y down, z out of back.
   sensorDown = [Math.sin(g) * Math.cos(b), Math.sin(b), Math.cos(g) * Math.cos(b)];
 }
 async function enableSensors() {
   try {
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-      const r = await DeviceOrientationEvent.requestPermission();
-      if (r !== 'granted') throw new Error('denied');
+      await DeviceOrientationEvent.requestPermission();
     }
-    window.addEventListener('deviceorientation', onOrient);
-  } catch (e) { S.tiltMode = 'fixed'; syncUI(); }
+  } catch (e) {}
+  // always listen; if no readings arrive the app quietly uses the fixed angle instead
+  window.addEventListener('deviceorientation', onOrient);
+  setTimeout(() => { if (!sensorDown && S.tiltMode === 'sensor' && !srcIsPhoto) toast('No motion sensor readings – using the fixed angle', 3000); }, 3000);
 }
-
 const norm = v => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const usingSensor = () => S.tiltMode === 'sensor' && sensorDown && !srcIsPhoto;
 
 let lastF = [0, 0, 1];
 function axes() {
   let target;
-  if (S.tiltMode === 'sensor' && sensorDown && !srcIsPhoto) target = sensorDown;
+  if (usingSensor()) target = sensorDown;
   else { const t = S.fixed * DEG; target = [0, Math.cos(t), Math.sin(t)]; }
-  // smooth
-  const k = S.tiltMode === 'sensor' ? 0.18 : 1;
+  const k = usingSensor() ? 0.18 : 1;
   down = norm([down[0] + (target[0] - down[0]) * k, down[1] + (target[1] - down[1]) * k, down[2] + (target[2] - down[2]) * k]);
   const d = down;
-  let f = [-d[2] * d[0], -d[2] * d[1], 1 - d[2] * d[2]];   // camera forward projected onto horizontal plane
+  let f = [-d[2] * d[0], -d[2] * d[1], 1 - d[2] * d[2]];
   if (Math.hypot(f[0], f[1], f[2]) < 0.05) f = lastF; else f = norm(f);
   lastF = f;
-  const r = norm(cross(d, f));
-  return { r, d, f };
+  return { r: norm(cross(d, f)), d, f };
 }
 
-// ---------- output geometry ----------
+// ---------- geometry ----------
+function computeAB(w, h, fov) { const t = Math.tan(fov * DEG / 2), dg = Math.hypot(w, h); return [t * w / dg, t * h / dg]; }
+function project(ax, s) { const Z = Math.max(dot(ax.f, s), 0.02); return [dot(ax.r, s) / Z, dot(ax.d, s) / Z]; }
 function geometry(ax, A, B) {
   const bc = -B + 2 * B * (1 - S.crop / 100);
   const maxT = Math.tan(S.maxDown * DEG);
-  const pts = [[-A, -B], [A, -B], [A, bc], [-A, bc]].map(([a, b]) => {
-    const s = [a, b, 1];
-    let Z = Math.max(dot(ax.f, s), 0.02);
-    return [dot(ax.r, s) / Z, dot(ax.d, s) / Z];
-  });
+  const pts = [[-A, -B], [A, -B], [A, bc], [-A, bc]].map(([a, b]) => project(ax, [a, b, 1]));
   const [TL, TR, BR, BL] = pts;
-  let x0, x1, y0, y1;
-  if (S.framing === 'fill') {
-    y0 = Math.max(TL[1], TR[1]); y1 = Math.min(BL[1], BR[1]);
-    y1 = Math.min(y1, maxT);
-    // left/right edges are straight lines; evaluate their x at y0 and y1 and take the inner one
-    const xAt = (P, Q, y) => P[1] === Q[1] ? P[0] : P[0] + (Q[0] - P[0]) * (y - P[1]) / (Q[1] - P[1]);
-    x0 = Math.max(xAt(TL, BL, y0), xAt(TL, BL, y1));
-    x1 = Math.min(xAt(TR, BR, y0), xAt(TR, BR, y1));
-    if (!(x1 > x0 && y1 > y0)) return geometryFit(pts, maxT, bc);
-  } else return geometryFit(pts, maxT, bc);
-  return { x0, y0, x1, y1, bc };
+  const fit = () => { const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.min(Math.max(...ys), maxT), bc }; };
+  if (S.framing !== 'fill') return fit();
+  const y0 = Math.max(TL[1], TR[1]), y1 = Math.min(BL[1], BR[1], maxT);
+  const xAt = (P, Q, y) => P[1] === Q[1] ? P[0] : P[0] + (Q[0] - P[0]) * (y - P[1]) / (Q[1] - P[1]);
+  const x0 = Math.max(xAt(TL, BL, y0), xAt(TL, BL, y1)), x1 = Math.min(xAt(TR, BR, y0), xAt(TR, BR, y1));
+  return (x1 > x0 && y1 > y0) ? { x0, y0, x1, y1, bc } : fit();
 }
-function geometryFit(pts, maxT, bc) {
-  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-  return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.min(Math.max(...ys), maxT), bc };
+function fitAspect(G, ar) {   // crop rect to a fixed aspect, keeping the top (straight-ahead) edge
+  const w = G.x1 - G.x0, h = G.y1 - G.y0;
+  if (w / h > ar) { const nw = h * ar, cx = (G.x0 + G.x1) / 2; return { ...G, x0: cx - nw / 2, x1: cx + nw / 2 }; }
+  return { ...G, y1: G.y0 + w / ar };
 }
 
-// ---------- render ----------
+// ---------- render loop ----------
 let paused = false, G = null, AX = null, AB = null;
+let recording = false, lockedAR = 0;
+let calib = null;  // {ax, ab, g, pts:[]}
 function srcDims() {
   if (!srcEl) return null;
   const w = srcIsPhoto ? srcEl.naturalWidth : srcEl.videoWidth, h = srcIsPhoto ? srcEl.naturalHeight : srcEl.videoHeight;
   return w && h ? [w, h] : null;
-}
-function computeAB(w, h) {
-  const t = Math.tan(getFov() * DEG / 2), dgn = Math.hypot(w, h);
-  return [t * w / dgn, t * h / dgn];
 }
 function draw(outW, outH) {
   gl.viewport(0, 0, outW, outH);
@@ -283,42 +380,94 @@ function draw(outW, outH) {
   gl.uniform2f(U.uAB, AB[0], AB[1]);
   gl.uniform1f(U.uBCrop, G.bc);
   gl.uniform4f(U.uRect, G.x0, G.y0, G.x1, G.y1);
+  gl.uniform2f(U.uTexel, 1 / srcW, 1 / srcH);
+  gl.uniform1f(U.uSharp, (S.sharpen || 0) / 100);
+  gl.uniform1f(U.uDetail, (S.detail || 0) / 100 * 0.8);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
+let wasLevel = false;
 function frame() {
   requestAnimationFrame(frame);
   if (!gl || paused) return;
   const dims = srcDims(); if (!dims) return;
   [srcW, srcH] = dims;
   if (!srcIsPhoto && video.readyState < 2) return;
-  if (!srcIsPhoto || srcDirty) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, srcEl); srcDirty = false; }
-  AX = axes(); AB = computeAB(srcW, srcH); G = geometry(AX, AB[0], AB[1]);
-  // size canvas to fit stage
-  const stage = $('stage'), cs = getComputedStyle(stage);
-  const availW = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-  const availH = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-  const aspect = (G.x1 - G.x0) / (G.y1 - G.y0);
-  let w = availW, h = w / aspect; if (h > availH) { h = availH; w = h * aspect; }
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const pw = Math.max(1, Math.round(w * dpr)), ph = Math.max(1, Math.round(h * dpr));
-  if (canvas.width !== pw || canvas.height !== ph) { canvas.width = pw; canvas.height = ph; }
-  canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
-  draw(pw, ph);
-  // readouts
-  const pitch = Math.asin(Math.max(-1, Math.min(1, AX.d[2]))) / DEG;
+
+  if (calib) { AX = calib.ax; AB = calib.ab; G = calib.g; }
+  else {
+    if (!srcIsPhoto || srcDirty) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, srcEl); srcDirty = false; }
+    AX = axes(); AB = computeAB(srcW, srcH, getFov()); G = geometry(AX, AB[0], AB[1]);
+    if (recording) G = fitAspect(G, lockedAR);
+  }
+
+  if (!recording && !calib) {
+    const stage = $('stage'), cs = getComputedStyle(stage);
+    const availW = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const availH = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const aspect = (G.x1 - G.x0) / (G.y1 - G.y0);
+    let w = availW, h = w / aspect; if (h > availH) { h = availH; w = h * aspect; }
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const pw = Math.max(2, Math.round(w * dpr / 2) * 2), ph = Math.max(2, Math.round(h * dpr / 2) * 2);
+    if (canvas.width !== pw || canvas.height !== ph) { canvas.width = pw; canvas.height = ph; }
+    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+  }
+  draw(canvas.width, canvas.height);
+
+  // readouts + level guide
+  const pitch = Math.asin(clamp(AX.d[2], -1, 1)) / DEG;
   const roll = Math.atan2(AX.d[0], AX.d[1]) / DEG;
+  const tiltErr = pitch - S.fixed;
+  const showLevel = S.level === 'on' && usingSensor() && !calib;
+  const tiltOk = Math.abs(tiltErr) < 2, rollOk = Math.abs(roll) < 2;
   $('tiltTxt').textContent = pitch.toFixed(0) + '° down';
   $('rollTxt').textContent = roll.toFixed(0) + '°';
+  $('tiltTxt').className = showLevel && tiltOk ? 'ok' : '';
+  $('rollTxt').className = showLevel && rollOk ? 'ok' : '';
+  $('tiltGauge').style.display = $('rollGauge').style.display = showLevel ? 'block' : 'none';
+  if (showLevel) {
+    $('tiltGauge').classList.toggle('ok', tiltOk); $('rollGauge').classList.toggle('ok', rollOk);
+    $('tiltGauge').lastChild.style.top = `calc(${50 + clamp(tiltErr / 15, -1, 1) * 45}% - 7px)`;
+    $('rollGauge').lastChild.style.left = `calc(${50 + clamp(roll / 15, -1, 1) * 45}% - 7px)`;
+    const lvl = tiltOk && rollOk;
+    if (lvl && !wasLevel) buzz(25);
+    wasLevel = (Math.abs(tiltErr) < 3 && Math.abs(roll) < 3) ? (wasLevel || lvl) : false;
+  }
   const ang = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
   $('warn').style.display = (ang % 180 !== 0 && !srcIsPhoto) ? 'block' : 'none';
 }
 requestAnimationFrame(frame);
 
-// ---------- capture ----------
-let lastBlob = null, lastUrl = null;
-$('shutter').onclick = () => {
+// ---------- saving ----------
+const stamp = () => new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+let lastBlob = null, lastName = '', lastUrl = null;
+function download(blob, name) {
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+function deliver(blob, name, isVideo) {
+  lastBlob = blob; lastName = name;
+  if (S.quickSave === 'on') { download(blob, name); toast(isVideo ? 'Video saved to Downloads' : 'Photo saved to Downloads'); buzz(15); return; }
+  if (lastUrl) URL.revokeObjectURL(lastUrl);
+  lastUrl = URL.createObjectURL(blob);
+  $('shotImg').style.display = isVideo ? 'none' : 'block';
+  $('shotVid').style.display = isVideo ? 'block' : 'none';
+  if (isVideo) { $('shotVid').src = lastUrl; $('shotVid').play().catch(() => {}); } else $('shotImg').src = lastUrl;
+  $('shot').style.display = 'flex';
+}
+$('shareBtn').onclick = async () => {
+  const file = new File([lastBlob], lastName, { type: lastBlob.type });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  download(lastBlob, lastName); toast('Saved to Downloads');
+};
+$('dlBtn').onclick = () => { download(lastBlob, lastName); toast('Saved to Downloads'); };
+$('backBtn').onclick = () => { $('shot').style.display = 'none'; $('shotVid').pause(); };
+
+// ---------- photo ----------
+function flash() { const w = $('wrap'); w.style.opacity = '0.3'; setTimeout(() => w.style.opacity = '1', 90); }
+function capturePhoto() {
   if (!G || !AX) return;
-  const fpx = (srcW / 2) / AB[0];                // source pixels per tan unit at centre
+  const fpx = (srcW / 2) / AB[0];
   let ow = (G.x1 - G.x0) * fpx, oh = (G.y1 - G.y0) * fpx;
   const maxDim = Math.min(4096, gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), gl.getParameter(gl.MAX_VIEWPORT_DIMS)[0]);
   const sc = Math.min(1, maxDim / Math.max(ow, oh)); ow = Math.round(ow * sc); oh = Math.round(oh * sc);
@@ -328,38 +477,203 @@ $('shutter').onclick = () => {
   draw(ow, oh);
   canvas.toBlob(blob => {
     canvas.width = pw; canvas.height = ph; paused = false;
-    if (!blob) return;
-    lastBlob = blob; if (lastUrl) URL.revokeObjectURL(lastUrl); lastUrl = URL.createObjectURL(blob);
-    const name = 'straightcam-' + new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19) + '.jpg';
-    $('shotImg').src = lastUrl; $('dlBtn').href = lastUrl; $('dlBtn').download = name; $('shareBtn').dataset.name = name;
-    $('shot').style.display = 'flex';
+    if (blob) deliver(blob, 'straightcam-' + stamp() + '.jpg', false);
   }, 'image/jpeg', 0.92);
-};
-$('shareBtn').onclick = async () => {
-  const file = new File([lastBlob], $('shareBtn').dataset.name || 'straightcam.jpg', { type: 'image/jpeg' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); } catch (e) {} }
-  else $('dlBtn').click();
-};
-$('backBtn').onclick = () => $('shot').style.display = 'none';
-
-// ---------- UI ----------
-function seg(id, key) {
-  const el = $(id);
-  el.querySelectorAll('button').forEach(b => b.onclick = () => { S[key] = b.dataset.v; save(); syncUI(); });
+  flash(); buzz(10);
 }
-seg('tiltMode', 'tiltMode'); seg('framing', 'framing');
-function slider(id, key, fmt) { $(id).oninput = e => { S[key] = +e.target.value; save(); syncUI(); }; }
-slider('fixed', 'fixed'); slider('crop', 'crop'); slider('maxDown', 'maxDown');
+
+// ---------- video ----------
+let recorder = null, recStart = 0, recTimer = null, micStream = null;
+function pickMime() {
+  const opts = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+  return opts.find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
+}
+async function startRecording() {
+  if (!window.MediaRecorder || !canvas.captureStream) { toast('Video recording not supported in this browser'); return; }
+  lockedAR = canvas.width / canvas.height;
+  recording = true;
+  const cs = canvas.captureStream(30);
+  if (S.sound === 'on') {
+    try {
+      if (!micStream) micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
+      micStream.getAudioTracks().forEach(t => cs.addTrack(t));
+    } catch (e) { toast('No microphone access – recording silently'); }
+  }
+  const mime = pickMime();
+  let rec;
+  try { rec = new MediaRecorder(cs, mime ? { mimeType: mime, videoBitsPerSecond: 10000000 } : { videoBitsPerSecond: 10000000 }); }
+  catch (e) { rec = new MediaRecorder(cs); }
+  const chunks = [];
+  rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  rec.onstop = () => {
+    const type = (rec.mimeType || mime || 'video/webm').split(';')[0];
+    const blob = new Blob(chunks, { type });
+    const ext = /mp4/.test(type) ? 'mp4' : 'webm';
+    recording = false;
+    cs.getVideoTracks().forEach(t => t.stop());
+    deliver(blob, 'straightcam-' + stamp() + '.' + ext, true);
+  };
+  recorder = rec;
+  rec.start(1000);
+  recStart = Date.now();
+  $('rec').style.display = 'block'; $('shutter').classList.add('recording');
+  recTimer = setInterval(() => { const s = Math.floor((Date.now() - recStart) / 1000); $('rec').textContent = '● ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }, 250);
+  buzz(30);
+}
+function stopRecording() {
+  if (!recorder) return;
+  clearInterval(recTimer); $('rec').style.display = 'none'; $('rec').textContent = '● 00:00';
+  $('shutter').classList.remove('recording');
+  const rec = recorder; recorder = null;
+  rec.stop(); buzz([20, 60, 20]);
+}
+
+// ---------- shutter, timer, shortcuts ----------
+let counting = null;
+function shutterPress() {
+  if (calib || $('shot').style.display === 'flex' || $('start').style.display !== 'none') return;
+  if (recording) { stopRecording(); return; }
+  if (counting) { clearInterval(counting); counting = null; $('count').style.display = 'none'; toast('Timer cancelled'); return; }
+  const act = () => S.mode === 'video' ? startRecording() : capturePhoto();
+  if (!S.timer) { act(); return; }
+  let n = S.timer; const c = $('count'); c.textContent = n; c.style.display = 'flex'; buzz(10);
+  counting = setInterval(() => {
+    n--;
+    if (n <= 0) { clearInterval(counting); counting = null; c.style.display = 'none'; act(); }
+    else { c.textContent = n; buzz(10); }
+  }, 1000);
+}
+$('shutter').onclick = shutterPress;
+document.addEventListener('keydown', e => {
+  if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  if ([' ', 'Enter', 'AudioVolumeUp', 'AudioVolumeDown', 'VolumeUp', 'VolumeDown', 'Camera', 'MediaPlayPause'].includes(e.key)) {
+    e.preventDefault();
+    if (e.repeat) return;
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    shutterPress();
+  }
+});
+const TIMERS = [0, 3, 10];
+$('timerBtn').onclick = () => { S.timer = TIMERS[(TIMERS.indexOf(S.timer) + 1) % TIMERS.length]; save(); syncUI(); };
+
+// ---------- presets ----------
+const presetMatches = p => Object.keys(CORE).every(k => p[k] === S[k]);
+function applyPreset(p) { Object.keys(CORE).forEach(k => { if (p[k] !== undefined) S[k] = p[k]; }); save(); syncUI(); toast('Preset: ' + p.name); }
+$('presetSave').onclick = () => {
+  const name = $('presetName').value.trim() || ('Preset ' + (S.presets.length + 1));
+  const p = { name }; Object.keys(CORE).forEach(k => p[k] = S[k]);
+  const i = S.presets.findIndex(x => x.name === name);
+  if (i >= 0) S.presets[i] = p; else S.presets.push(p);
+  $('presetName').value = ''; $('presetName').blur(); save(); syncUI(); toast('Saved preset "' + name + '"');
+};
+function renderPresets() {
+  const bar = $('presetBar'), list = $('presetList');
+  bar.innerHTML = ''; list.innerHTML = '';
+  S.presets.forEach((p, i) => {
+    const c = document.createElement('button'); c.className = 'chip' + (presetMatches(p) ? ' on' : ''); c.textContent = p.name;
+    c.onclick = () => applyPreset(p); bar.appendChild(c);
+    const row = document.createElement('div');
+    const label = document.createElement('span');
+    label.textContent = `${p.name} · ${p.tiltMode === 'sensor' ? 'sensor' : 'fixed'} ${p.fixed}°, crop ${p.crop}%` + (p.sharpen != null ? `, sharp ${p.sharpen}%` : '');
+    const del = document.createElement('button'); del.textContent = '✕'; del.setAttribute('aria-label', 'Delete preset');
+    del.onclick = () => { S.presets.splice(i, 1); save(); syncUI(); };
+    row.appendChild(label); row.appendChild(del); list.appendChild(row);
+  });
+  bar.style.display = S.presets.length ? 'flex' : 'none';
+}
+
+// ---------- auto calibration ----------
+function calibMsg() {
+  const n = calib.pts.length, lines = Math.floor(n / 2);
+  $('calibMsg').textContent = n % 2 === 0
+    ? (lines === 0 ? 'Frame frozen. Tap the TOP of a straight vertical edge (door frame, wall corner, lamp post) near the LEFT or RIGHT side of the picture.'
+                   : `${lines} edge${lines > 1 ? 's' : ''} marked. Tap Apply, or mark another edge on the other side for better accuracy.`)
+    : 'Now tap the BOTTOM of that same edge.';
+  $('calibApply').disabled = lines < 1; $('calibUndo').disabled = n === 0;
+}
+function drawCalib() {
+  const r = ov.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  ov.width = Math.round(r.width * dpr); ov.height = Math.round(r.height * dpr);
+  const g = ov.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, r.width, r.height);
+  g.lineWidth = 3; g.strokeStyle = '#f5c542'; g.fillStyle = '#f5c542';
+  calib.pts.forEach((p, i) => {
+    const x = p.u * r.width, y = p.v * r.height;
+    g.beginPath(); g.arc(x, y, 7, 0, 7); g.fill();
+    if (i % 2 === 1) { const q = calib.pts[i - 1]; g.beginPath(); g.moveTo(q.u * r.width, q.v * r.height); g.lineTo(x, y); g.stroke(); }
+  });
+}
+$('calibBtn').onclick = () => {
+  if (!AX || !G || recording) { toast('Start the camera first'); return; }
+  $('panel').classList.remove('open');
+  calib = { ax: { r: AX.r.slice(), d: AX.d.slice(), f: AX.f.slice() }, ab: AB.slice(), g: { ...G }, pts: [] };
+  ov.style.display = 'block'; $('calib').style.display = 'block'; $('controls').style.visibility = 'hidden';
+  calibMsg(); drawCalib();
+};
+ov.addEventListener('pointerdown', e => {
+  if (!calib) return;
+  const r = ov.getBoundingClientRect();
+  const u = (e.clientX - r.left) / r.width, v = (e.clientY - r.top) / r.height;
+  const X = calib.g.x0 + (calib.g.x1 - calib.g.x0) * u, Y = calib.g.y0 + (calib.g.y1 - calib.g.y0) * v;
+  const ax = calib.ax, s = [0, 1, 2].map(i => X * ax.r[i] + Y * ax.d[i] + ax.f[i]);
+  if (s[2] <= 0) return;
+  // normalised source position: stays fixed whatever lens FOV we later try
+  calib.pts.push({ u, v, nx: (s[0] / s[2]) / calib.ab[0], ny: (s[1] / s[2]) / calib.ab[1] });
+  calibMsg(); drawCalib(); buzz(8);
+});
+function endCalib() { calib = null; ov.style.display = 'none'; $('calib').style.display = 'none'; $('controls').style.visibility = 'visible'; }
+$('calibUndo').onclick = () => { calib.pts.pop(); calibMsg(); drawCalib(); };
+$('calibCancel').onclick = endCalib;
+$('calibApply').onclick = () => {
+  const pts = calib.pts, ax = calib.ax, lines = [];
+  for (let i = 0; i + 1 < pts.length; i += 2) lines.push([pts[i], pts[i + 1]]);
+  const err = fov => {
+    const [A, B] = computeAB(srcW, srcH, fov); let e = 0;
+    for (const [p, q] of lines) {
+      const P = project(ax, [p.nx * A, p.ny * B, 1]), Q = project(ax, [q.nx * A, q.ny * B, 1]);
+      const dy = P[1] - Q[1]; if (Math.abs(dy) < 1e-6) return 1e9;
+      e += ((P[0] - Q[0]) / dy) ** 2;
+    }
+    return e;
+  };
+  let best = 40, be = Infinity;
+  for (let f = 40; f <= 150; f += 0.5) { const e = err(f); if (e < be) { be = e; best = f; } }
+  let lo = Math.max(40, best - 0.5), hi = Math.min(150, best + 0.5);
+  for (let k = 0; k < 30; k++) { const m1 = lo + (hi - lo) / 3, m2 = hi - (hi - lo) / 3; if (err(m1) < err(m2)) hi = m2; else lo = m1; }
+  best = Math.round(lo + hi) / 2;
+  const nearCentre = lines.every(([p, q]) => Math.abs(p.nx) < 0.2 && Math.abs(q.nx) < 0.2);
+  endCalib();
+  if (nearCentre) { toast('Those edges were too near the middle – pick one nearer the side', 3000); return; }
+  if (best <= 40.5 || best >= 149.5) { toast('Could not calibrate – check the tilt and try again', 3000); return; }
+  S.fovByCam[camKey()] = best; save(); syncUI();
+  toast(`Lens calibrated: ${best}°`, 2500); buzz(30);
+};
+
+// ---------- settings UI ----------
+function seg(id, key) { $(id).querySelectorAll('button').forEach(b => b.onclick = () => { if (recording && key === 'mode') return; S[key] = b.dataset.v; save(); syncUI(); }); }
+seg('tiltMode', 'tiltMode'); seg('framing', 'framing'); seg('level', 'level'); seg('quickSave', 'quickSave'); seg('sound', 'sound'); seg('modeSeg', 'mode');
+function slider(id, key) { $(id).oninput = e => { S[key] = +e.target.value; save(); syncUI(); }; }
+slider('fixed', 'fixed'); slider('crop', 'crop'); slider('maxDown', 'maxDown'); slider('sharpen', 'sharpen'); slider('detail', 'detail');
 $('fov').oninput = e => { S.fovByCam[camKey()] = +e.target.value; save(); syncUI(); };
+function syncSeg(id, val) { $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === val)); }
 function syncUI() {
-  $('tiltMode').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === S.tiltMode));
-  $('framing').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === S.framing));
+  syncSeg('tiltMode', S.tiltMode); syncSeg('framing', S.framing); syncSeg('level', S.level);
+  syncSeg('quickSave', S.quickSave); syncSeg('sound', S.sound); syncSeg('modeSeg', S.mode);
+  const sensor = S.tiltMode === 'sensor' && !srcIsPhoto;
+  $('fixedLbl').textContent = sensor ? 'Target tilt (for level guide)' : 'Fixed tilt down';
+  $('fixedHint').textContent = sensor ? 'Correction follows the motion sensor; this is the angle the level guide aims for.' : 'Correction assumes the phone is held at exactly this angle.';
   $('fixed').value = S.fixed; $('fixedVal').textContent = S.fixed + '°';
-  $('fixedRow').style.display = S.tiltMode === 'fixed' ? 'block' : 'none';
   $('crop').value = S.crop; $('cropVal').textContent = S.crop + '%';
+  $('sharpen').value = S.sharpen; $('sharpenVal').textContent = S.sharpen + '%';
+  $('detail').value = S.detail; $('detailVal').textContent = S.detail + '%';
   $('maxDown').value = S.maxDown; $('maxDownVal').textContent = S.maxDown + '°';
   const fv = getFov(); $('fov').value = fv; $('fovVal').textContent = fv + '°';
+  $('timerBtn').textContent = S.timer ? `⏱ ${S.timer}s` : '⏱ Off'; $('timerBtn').classList.toggle('on', !!S.timer);
+  $('shutter').classList.toggle('video', S.mode === 'video');
+  renderPresets();
 }
+$('gear').onclick = () => $('panel').classList.add('open');
+$('close').onclick = () => $('panel').classList.remove('open');
+
 let resetArmed = null;
 $('resetBtn').onclick = () => {
   const b = $('resetBtn');
@@ -369,27 +683,25 @@ $('resetBtn').onclick = () => {
     return;
   }
   clearTimeout(resetArmed); resetArmed = null;
-  const keepCam = S.camId;
-  S = { ...defaults, fovByCam: {}, camId: keepCam };
+  const keep = { camId: S.camId, presets: S.presets, mode: S.mode };
+  S = { ...JSON.parse(JSON.stringify(defaults)), ...keep };
   save(); syncUI();
   b.textContent = 'Settings reset ✓'; b.style.background = '#2a6';
   setTimeout(() => { b.textContent = 'Reset to defaults'; b.style.background = ''; }, 1500);
 };
-$('gear').onclick = () => $('panel').classList.add('open');
-$('close').onclick = () => $('panel').classList.remove('open');
-function alertBox(err) { $('err').textContent = (err && err.message) || String(err); $('start').style.display = 'flex'; }
 syncUI();
 
 $('startBtn').onclick = async () => {
   $('err').textContent = '';
   await enableSensors();
   try {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Camera needs the page to be opened over https:// in Safari or Chrome.');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Camera needs the page to be opened over https:// in Chrome or Safari.');
     await chooseBestCamera();
     $('start').style.display = 'none';
     try { screen.orientation && screen.orientation.lock && screen.orientation.lock('portrait').catch(() => {}); } catch (e) {}
-  } catch (err) { alertBox(err); }
+  } catch (err) { $('err').textContent = (err && err.message) || String(err); }
 };
+document.addEventListener('visibilitychange', () => { if (document.hidden && recording) stopRecording(); });
 })();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
