@@ -158,7 +158,7 @@ const $ = id => document.getElementById(id);
 const pv = $('pv'), rv = $('rv'), tv = $('tv'), cv = $('cv');
 let sources = [], clips = [], cur = null, selStart = 0, looping = false, dragging = false;
 let opts = { fmt: '9:16', fit: 'fill', aud: 'on', ord: 'keep', mot: 'on' };
-const MOTIONS = ['zoom-in', 'zoom-out', 'left', 'right', 'up', 'down'];
+const MOTIONS = ['zoom-in', 'left', 'right', 'up', 'down']; // never zoom out
 const MICON = { 'zoom-in': '⊕', 'zoom-out': '⊖', left: '←', right: '→', up: '↑', down: '↓', none: '•' };
 let lastMot = '';
 function randMotion() { let m; do { m = MOTIONS[Math.floor(Math.random() * MOTIONS.length)]; } while (m === lastMot); return lastMot = m; }
@@ -406,7 +406,6 @@ function drawFrame(ctx, v, W, H, motion, p) {
   const t = Math.max(0, Math.min(1, p || 0));
   const Z = 1.14; let z = 1, tx = 0, ty = 0;
   if (m === 'zoom-in') z = 1 + (Z - 1) * t;
-  else if (m === 'zoom-out') z = Z - (Z - 1) * t;
   else if (m === 'left' || m === 'right') { z = Z; const r = (Z - 1) / 2 * W * 0.95; tx = m === 'left' ? r - 2 * r * t : -r + 2 * r * t; }
   else if (m === 'up' || m === 'down') { z = Z; const r = (Z - 1) / 2 * H * 0.95; ty = m === 'up' ? r - 2 * r * t : -r + 2 * r * t; }
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
