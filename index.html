@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>StraightCam</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:#000;color:#eee;font:15px/1.35 -apple-system,system-ui,Segoe UI,Roboto,sans-serif;overflow:hidden;touch-action:manipulation}
+  #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 44px) 0 calc(env(safe-area-inset-bottom) + 110px)}
+  canvas{display:block;background:#111}
+  #top{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 8px) 14px 8px;display:flex;justify-content:space-between;align-items:center;font-variant-numeric:tabular-nums;font-size:13px;color:#bbb;pointer-events:none}
+  #top b{color:#fff}
+  #bottom{position:fixed;left:0;right:0;bottom:0;padding:0 24px calc(env(safe-area-inset-bottom) + 18px);display:flex;align-items:center;justify-content:space-between}
+  #shutter{width:76px;height:76px;border-radius:50%;border:4px solid #fff;background:#fff;box-shadow:inset 0 0 0 4px #000;cursor:pointer}
+  #shutter:active{transform:scale(.94)}
+  .round{width:48px;height:48px;border-radius:50%;border:0;background:#222;color:#fff;font-size:22px;cursor:pointer}
+  #panel{position:fixed;left:0;right:0;bottom:0;max-height:70%;overflow:auto;background:rgba(18,18,18,.97);border-radius:16px 16px 0 0;padding:16px 18px calc(env(safe-area-inset-bottom) + 18px);transform:translateY(105%);transition:transform .25s;z-index:5}
+  #panel.open{transform:none}
+  #panel h3{margin:0 0 10px;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+  .row{margin:14px 0}
+  .row label{display:flex;justify-content:space-between;font-size:13px;color:#aaa;margin-bottom:6px}
+  .row label span{color:#fff;font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%}
+  select,button.btn{width:100%;padding:10px;border-radius:10px;border:1px solid #333;background:#222;color:#fff;font-size:15px}
+  .seg{display:flex;gap:6px}
+  .seg button{flex:1;padding:9px;border-radius:9px;border:1px solid #333;background:#1c1c1c;color:#ccc;font-size:14px}
+  .seg button.on{background:#fff;color:#000;border-color:#fff}
+  .hint{font-size:12px;color:#888;margin-top:4px}
+  #start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:30px;text-align:center;z-index:10;background:#000}
+  #start h1{margin:0;font-size:28px}
+  #start p{margin:0;color:#aaa;max-width:340px}
+  #startBtn{padding:14px 34px;border-radius:30px;border:0;background:#fff;color:#000;font-size:17px;font-weight:600}
+  #err{color:#f88;font-size:13px;max-width:340px}
+  #shot{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px)}
+  #shot img{max-width:100%;max-height:72vh;object-fit:contain;background:#111}
+  #shot .btns{display:flex;gap:10px;width:100%;max-width:420px}
+  #shot .btns > *{flex:1;text-align:center;text-decoration:none;padding:12px;border-radius:12px;background:#222;color:#fff;border:0;font-size:15px}
+  #shot .btns .primary{background:#fff;color:#000;font-weight:600}
+  #shot small{color:#888}
+  #warn{position:fixed;top:calc(env(safe-area-inset-top) + 40px);left:50%;transform:translateX(-50%);background:#a33;color:#fff;padding:6px 12px;border-radius:8px;font-size:13px;display:none;z-index:4}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="c"></canvas></div>
+<div id="top"><div>Tilt <b id="tiltTxt">–</b> · Roll <b id="rollTxt">–</b></div><div id="camTxt"></div></div>
+<div id="warn">Hold the phone in portrait</div>
+<div id="bottom">
+  <label class="round" style="display:flex;align-items:center;justify-content:center" title="Load photo">🖼<input id="file" type="file" accept="image/*" hidden></label>
+  <button id="shutter" aria-label="Take photo"></button>
+  <button class="round" id="gear" aria-label="Settings">⚙︎</button>
+</div>
+
+<div id="panel">
+  <h3>Settings <button class="round" id="close" style="width:36px;height:36px;font-size:16px">✕</button></h3>
+  <div class="row"><label>Camera</label><select id="camSel"></select>
+    <div class="hint">Pick the "Ultra Wide" / 0.5× camera if it isn't chosen automatically.</div></div>
+  <div class="row"><label>Tilt source</label>
+    <div class="seg" id="tiltMode"><button data-v="sensor">Motion sensor</button><button data-v="fixed">Fixed angle</button></div></div>
+  <div class="row" id="fixedRow"><label>Fixed tilt down <span id="fixedVal"></span></label><input id="fixed" type="range" min="0" max="80" step="1"></div>
+  <div class="row"><label>Chop off bottom <span id="cropVal"></span></label><input id="crop" type="range" min="0" max="70" step="1"></div>
+  <div class="row"><label>Lens field of view (diagonal) <span id="fovVal"></span></label><input id="fov" type="range" min="50" max="140" step="0.5">
+    <div class="hint">Calibrate: point at a door frame or building and adjust until its edges are perfectly vertical. Ultra-wide is usually 110–120°, main camera 75–80°.</div></div>
+  <div class="row"><label>Framing</label>
+    <div class="seg" id="framing"><button data-v="fill">Fill (no black edges)</button><button data-v="fit">Show everything</button></div></div>
+  <div class="row"><label>Max look-down in output <span id="maxDownVal"></span></label><input id="maxDown" type="range" min="30" max="85" step="1">
+    <div class="hint">Stops the area near your feet from being stretched enormously.</div></div>
+</div>
+
+<div id="start">
+  <h1>StraightCam</h1>
+  <p>Hold your phone tilted down. You get a straight-ahead, perspective-corrected picture with the bottom chopped off.</p>
+  <button id="startBtn">Start camera</button>
+  <div id="err"></div>
+</div>
+
+<div id="shot">
+  <img id="shotImg" alt="Captured photo">
+  <small>On iPhone you can also press and hold the image → Save to Photos</small>
+  <div class="btns"><button id="shareBtn" class="primary">Save / Share</button><a id="dlBtn" download="straightcam.jpg">Download</a><button id="backBtn">Back</button></div>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const canvas = $('c');
+const DEG = Math.PI / 180;
+
+// ---------- settings ----------
+const defaults = { tiltMode: 'sensor', fixed: 45, crop: 25, framing: 'fill', maxDown: 70, fovByCam: {}, camId: null };
+let S = { ...defaults };
+try { Object.assign(S, JSON.parse(localStorage.getItem('straightcam') || '{}')); } catch (e) {}
+const save = () => { try { localStorage.setItem('straightcam', JSON.stringify(S)); } catch (e) {} };
+
+// ---------- WebGL ----------
+const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true, antialias: false });
+if (!gl) { $('err').textContent = 'WebGL is not available on this browser.'; }
+const vs = `attribute vec2 p; varying vec2 uv; void main(){ uv = vec2((p.x+1.0)*0.5, (1.0-p.y)*0.5); gl_Position = vec4(p,0.0,1.0); }`;
+const fs = `precision highp float;
+varying vec2 uv;
+uniform sampler2D tex;
+uniform vec3 uR, uD, uF;     // virtual level camera axes expressed in source-camera coords
+uniform vec2 uAB;            // source half extents in tan units
+uniform float uBCrop;        // max b (tan units) kept in source
+uniform vec4 uRect;          // x0,y0,x1,y1 of output in tan units
+void main(){
+  float X = mix(uRect.x, uRect.z, uv.x);
+  float Y = mix(uRect.y, uRect.w, uv.y);
+  vec3 s = X*uR + Y*uD + uF;
+  if (s.z <= 0.001) { gl_FragColor = vec4(0.0,0.0,0.0,1.0); return; }
+  float a = s.x / s.z, b = s.y / s.z;
+  if (abs(a) > uAB.x || b < -uAB.y || b > uBCrop) { gl_FragColor = vec4(0.0,0.0,0.0,1.0); return; }
+  vec2 t = vec2(a/uAB.x, b/uAB.y)*0.5 + 0.5;
+  gl_FragColor = vec4(texture2D(tex, t).rgb, 1.0);
+}`;
+function sh(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+let prog, U = {};
+if (gl) {
+  prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs));
+  gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(prog); gl.useProgram(prog);
+  const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  ['tex','uR','uD','uF','uAB','uBCrop','uRect'].forEach(n => U[n] = gl.getUniformLocation(prog, n));
+  const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.uniform1i(U.tex, 0);
+}
+
+// ---------- source (camera video or loaded photo) ----------
+const video = document.createElement('video');
+video.playsInline = true; video.muted = true; video.setAttribute('playsinline', '');
+let stream = null, srcEl = null, srcW = 0, srcH = 0, srcIsPhoto = false, srcDirty = true;
+let currentCamId = null, isUltra = false;
+
+function camKey() { return srcIsPhoto ? 'photo' : (currentCamId || 'default'); }
+function getFov() { const v = S.fovByCam[camKey()]; return v || (isUltra ? 118 : 78); }
+
+async function startCamera(deviceId) {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  const base = { width: { ideal: 1920 }, height: { ideal: 1440 } };
+  const video_c = deviceId ? { ...base, deviceId: { exact: deviceId } } : { ...base, facingMode: { ideal: 'environment' } };
+  stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: video_c });
+  const track = stream.getVideoTracks()[0];
+  const st = track.getSettings ? track.getSettings() : {};
+  currentCamId = st.deviceId || deviceId || null;
+  isUltra = /ultra|0\.5/i.test(track.label || '');
+  // Android: some phones expose the ultra-wide as zoom < 1 on the main logical camera
+  try {
+    const caps = track.getCapabilities ? track.getCapabilities() : {};
+    if (caps.zoom && caps.zoom.min < 1) { await track.applyConstraints({ advanced: [{ zoom: caps.zoom.min }] }); isUltra = true; }
+  } catch (e) {}
+  video.srcObject = stream;
+  await video.play();
+  srcEl = video; srcIsPhoto = false; srcDirty = true;
+  $('camTxt').textContent = (track.label || 'Camera').replace(/camera2 \d+, /, '');
+  syncUI();
+}
+
+async function chooseBestCamera() {
+  // first call gets permission so labels become visible
+  await startCamera(S.camId || null);
+  const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+  const sel = $('camSel'); sel.innerHTML = '';
+  devs.forEach((d, i) => { const o = document.createElement('option'); o.value = d.deviceId; o.textContent = d.label || ('Camera ' + (i + 1)); sel.appendChild(o); });
+  if (!S.camId) {
+    const ultra = devs.find(d => /ultra/i.test(d.label));
+    if (ultra && ultra.deviceId !== currentCamId) await startCamera(ultra.deviceId);
+  }
+  sel.value = currentCamId || '';
+}
+
+$('camSel').onchange = async e => { S.camId = e.target.value; save(); try { await startCamera(S.camId); } catch (err) { alertBox(err); } };
+
+$('file').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    srcEl = img; srcIsPhoto = true; srcDirty = true; isUltra = true;
+    if (S.tiltMode === 'sensor') S.tiltMode = 'fixed';
+    $('camTxt').textContent = 'Photo · tap ⚙︎ to set its tilt';
+    $('start').style.display = 'none';
+    syncUI();
+  };
+  img.src = URL.createObjectURL(f);
+};
+
+// ---------- orientation ----------
+let down = [0, 1, 0];          // world-down vector in source camera coords (x right, y down, z forward)
+let sensorDown = null;
+function onOrient(e) {
+  if (e.beta == null) return;
+  const b = e.beta * DEG, g = (e.gamma || 0) * DEG;
+  // device: x right, y up, z out of screen. Camera: x right, y down, z out of back.
+  sensorDown = [Math.sin(g) * Math.cos(b), Math.sin(b), Math.cos(g) * Math.cos(b)];
+}
+async function enableSensors() {
+  try {
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      const r = await DeviceOrientationEvent.requestPermission();
+      if (r !== 'granted') throw new Error('denied');
+    }
+    window.addEventListener('deviceorientation', onOrient);
+  } catch (e) { S.tiltMode = 'fixed'; syncUI(); }
+}
+
+const norm = v => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+
+let lastF = [0, 0, 1];
+function axes() {
+  let target;
+  if (S.tiltMode === 'sensor' && sensorDown && !srcIsPhoto) target = sensorDown;
+  else { const t = S.fixed * DEG; target = [0, Math.cos(t), Math.sin(t)]; }
+  // smooth
+  const k = S.tiltMode === 'sensor' ? 0.18 : 1;
+  down = norm([down[0] + (target[0] - down[0]) * k, down[1] + (target[1] - down[1]) * k, down[2] + (target[2] - down[2]) * k]);
+  const d = down;
+  let f = [-d[2] * d[0], -d[2] * d[1], 1 - d[2] * d[2]];   // camera forward projected onto horizontal plane
+  if (Math.hypot(f[0], f[1], f[2]) < 0.05) f = lastF; else f = norm(f);
+  lastF = f;
+  const r = norm(cross(d, f));
+  return { r, d, f };
+}
+
+// ---------- output geometry ----------
+function geometry(ax, A, B) {
+  const bc = -B + 2 * B * (1 - S.crop / 100);
+  const maxT = Math.tan(S.maxDown * DEG);
+  const pts = [[-A, -B], [A, -B], [A, bc], [-A, bc]].map(([a, b]) => {
+    const s = [a, b, 1];
+    let Z = Math.max(dot(ax.f, s), 0.02);
+    return [dot(ax.r, s) / Z, dot(ax.d, s) / Z];
+  });
+  const [TL, TR, BR, BL] = pts;
+  let x0, x1, y0, y1;
+  if (S.framing === 'fill') {
+    y0 = Math.max(TL[1], TR[1]); y1 = Math.min(BL[1], BR[1]);
+    y1 = Math.min(y1, maxT);
+    // left/right edges are straight lines; evaluate their x at y0 and y1 and take the inner one
+    const xAt = (P, Q, y) => P[1] === Q[1] ? P[0] : P[0] + (Q[0] - P[0]) * (y - P[1]) / (Q[1] - P[1]);
+    x0 = Math.max(xAt(TL, BL, y0), xAt(TL, BL, y1));
+    x1 = Math.min(xAt(TR, BR, y0), xAt(TR, BR, y1));
+    if (!(x1 > x0 && y1 > y0)) return geometryFit(pts, maxT, bc);
+  } else return geometryFit(pts, maxT, bc);
+  return { x0, y0, x1, y1, bc };
+}
+function geometryFit(pts, maxT, bc) {
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.min(Math.max(...ys), maxT), bc };
+}
+
+// ---------- render ----------
+let paused = false, G = null, AX = null, AB = null;
+function srcDims() {
+  if (!srcEl) return null;
+  const w = srcIsPhoto ? srcEl.naturalWidth : srcEl.videoWidth, h = srcIsPhoto ? srcEl.naturalHeight : srcEl.videoHeight;
+  return w && h ? [w, h] : null;
+}
+function computeAB(w, h) {
+  const t = Math.tan(getFov() * DEG / 2), dgn = Math.hypot(w, h);
+  return [t * w / dgn, t * h / dgn];
+}
+function draw(outW, outH) {
+  gl.viewport(0, 0, outW, outH);
+  gl.uniform3fv(U.uR, AX.r); gl.uniform3fv(U.uD, AX.d); gl.uniform3fv(U.uF, AX.f);
+  gl.uniform2f(U.uAB, AB[0], AB[1]);
+  gl.uniform1f(U.uBCrop, G.bc);
+  gl.uniform4f(U.uRect, G.x0, G.y0, G.x1, G.y1);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+function frame() {
+  requestAnimationFrame(frame);
+  if (!gl || paused) return;
+  const dims = srcDims(); if (!dims) return;
+  [srcW, srcH] = dims;
+  if (!srcIsPhoto && video.readyState < 2) return;
+  if (!srcIsPhoto || srcDirty) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, srcEl); srcDirty = false; }
+  AX = axes(); AB = computeAB(srcW, srcH); G = geometry(AX, AB[0], AB[1]);
+  // size canvas to fit stage
+  const stage = $('stage'), cs = getComputedStyle(stage);
+  const availW = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const availH = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const aspect = (G.x1 - G.x0) / (G.y1 - G.y0);
+  let w = availW, h = w / aspect; if (h > availH) { h = availH; w = h * aspect; }
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const pw = Math.max(1, Math.round(w * dpr)), ph = Math.max(1, Math.round(h * dpr));
+  if (canvas.width !== pw || canvas.height !== ph) { canvas.width = pw; canvas.height = ph; }
+  canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+  draw(pw, ph);
+  // readouts
+  const pitch = Math.asin(Math.max(-1, Math.min(1, AX.d[2]))) / DEG;
+  const roll = Math.atan2(AX.d[0], AX.d[1]) / DEG;
+  $('tiltTxt').textContent = pitch.toFixed(0) + '° down';
+  $('rollTxt').textContent = roll.toFixed(0) + '°';
+  const ang = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+  $('warn').style.display = (ang % 180 !== 0 && !srcIsPhoto) ? 'block' : 'none';
+}
+requestAnimationFrame(frame);
+
+// ---------- capture ----------
+let lastBlob = null, lastUrl = null;
+$('shutter').onclick = () => {
+  if (!G || !AX) return;
+  const fpx = (srcW / 2) / AB[0];                // source pixels per tan unit at centre
+  let ow = (G.x1 - G.x0) * fpx, oh = (G.y1 - G.y0) * fpx;
+  const maxDim = Math.min(4096, gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), gl.getParameter(gl.MAX_VIEWPORT_DIMS)[0]);
+  const sc = Math.min(1, maxDim / Math.max(ow, oh)); ow = Math.round(ow * sc); oh = Math.round(oh * sc);
+  paused = true;
+  const pw = canvas.width, ph = canvas.height;
+  canvas.width = ow; canvas.height = oh;
+  draw(ow, oh);
+  canvas.toBlob(blob => {
+    canvas.width = pw; canvas.height = ph; paused = false;
+    if (!blob) return;
+    lastBlob = blob; if (lastUrl) URL.revokeObjectURL(lastUrl); lastUrl = URL.createObjectURL(blob);
+    const name = 'straightcam-' + new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19) + '.jpg';
+    $('shotImg').src = lastUrl; $('dlBtn').href = lastUrl; $('dlBtn').download = name; $('shareBtn').dataset.name = name;
+    $('shot').style.display = 'flex';
+  }, 'image/jpeg', 0.92);
+};
+$('shareBtn').onclick = async () => {
+  const file = new File([lastBlob], $('shareBtn').dataset.name || 'straightcam.jpg', { type: 'image/jpeg' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); } catch (e) {} }
+  else $('dlBtn').click();
+};
+$('backBtn').onclick = () => $('shot').style.display = 'none';
+
+// ---------- UI ----------
+function seg(id, key) {
+  const el = $(id);
+  el.querySelectorAll('button').forEach(b => b.onclick = () => { S[key] = b.dataset.v; save(); syncUI(); });
+}
+seg('tiltMode', 'tiltMode'); seg('framing', 'framing');
+function slider(id, key, fmt) { $(id).oninput = e => { S[key] = +e.target.value; save(); syncUI(); }; }
+slider('fixed', 'fixed'); slider('crop', 'crop'); slider('maxDown', 'maxDown');
+$('fov').oninput = e => { S.fovByCam[camKey()] = +e.target.value; save(); syncUI(); };
+function syncUI() {
+  $('tiltMode').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === S.tiltMode));
+  $('framing').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === S.framing));
+  $('fixed').value = S.fixed; $('fixedVal').textContent = S.fixed + '°';
+  $('fixedRow').style.display = S.tiltMode === 'fixed' ? 'block' : 'none';
+  $('crop').value = S.crop; $('cropVal').textContent = S.crop + '%';
+  $('maxDown').value = S.maxDown; $('maxDownVal').textContent = S.maxDown + '°';
+  const fv = getFov(); $('fov').value = fv; $('fovVal').textContent = fv + '°';
+}
+$('gear').onclick = () => $('panel').classList.add('open');
+$('close').onclick = () => $('panel').classList.remove('open');
+function alertBox(err) { $('err').textContent = (err && err.message) || String(err); $('start').style.display = 'flex'; }
+syncUI();
+
+$('startBtn').onclick = async () => {
+  $('err').textContent = '';
+  await enableSensors();
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Camera needs the page to be opened over https:// in Safari or Chrome.');
+    await chooseBestCamera();
+    $('start').style.display = 'none';
+    try { screen.orientation && screen.orientation.lock && screen.orientation.lock('portrait').catch(() => {}); } catch (e) {}
+  } catch (err) { alertBox(err); }
+};
+})();
+</script>
+</body>
+</html>
