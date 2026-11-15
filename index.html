@@ -156,6 +156,7 @@
   <h4>Reset</h4>
   <div class="row"><button class="btn" id="resetBtn">Reset to defaults</button>
     <div class="hint">Resets every setting and the lens calibration. Your camera choice and presets are kept.</div></div>
+  <div class="hint" style="text-align:center;margin-top:18px">StraightCam v1.2</div>
 </div>
 
 <div id="calib">
@@ -703,7 +704,7 @@ $('startBtn').onclick = async () => {
 };
 document.addEventListener('visibilitychange', () => { if (document.hidden && recording) stopRecording(); });
 })();
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => {});
 </script>
 </body>
 </html>
