@@ -7,6 +7,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000000">
 <title>StraightCam</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;background:#000;color:#eee;font:15px/1.35 -apple-system,system-ui,Segoe UI,Roboto,sans-serif;overflow:hidden;touch-action:manipulation}
@@ -371,6 +374,7 @@ $('startBtn').onclick = async () => {
   } catch (err) { alertBox(err); }
 };
 })();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
 </html>
