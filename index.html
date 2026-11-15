@@ -71,6 +71,8 @@
     <div class="seg" id="framing"><button data-v="fill">Fill (no black edges)</button><button data-v="fit">Show everything</button></div></div>
   <div class="row"><label>Max look-down in output <span id="maxDownVal"></span></label><input id="maxDown" type="range" min="30" max="85" step="1">
     <div class="hint">Stops the area near your feet from being stretched enormously.</div></div>
+  <div class="row"><button class="btn" id="resetBtn">Reset to defaults</button>
+    <div class="hint">Resets every setting and the lens calibration. Your chosen camera is kept.</div></div>
 </div>
 
 <div id="start">
@@ -358,6 +360,21 @@ function syncUI() {
   $('maxDown').value = S.maxDown; $('maxDownVal').textContent = S.maxDown + '°';
   const fv = getFov(); $('fov').value = fv; $('fovVal').textContent = fv + '°';
 }
+let resetArmed = null;
+$('resetBtn').onclick = () => {
+  const b = $('resetBtn');
+  if (!resetArmed) {
+    b.textContent = 'Tap again to confirm reset'; b.style.background = '#a33';
+    resetArmed = setTimeout(() => { resetArmed = null; b.textContent = 'Reset to defaults'; b.style.background = ''; }, 3000);
+    return;
+  }
+  clearTimeout(resetArmed); resetArmed = null;
+  const keepCam = S.camId;
+  S = { ...defaults, fovByCam: {}, camId: keepCam };
+  save(); syncUI();
+  b.textContent = 'Settings reset ✓'; b.style.background = '#2a6';
+  setTimeout(() => { b.textContent = 'Reset to defaults'; b.style.background = ''; }, 1500);
+};
 $('gear').onclick = () => $('panel').classList.add('open');
 $('close').onclick = () => $('panel').classList.remove('open');
 function alertBox(err) { $('err').textContent = (err && err.message) || String(err); $('start').style.display = 'flex'; }
