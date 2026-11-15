@@ -12,6 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0d0d0f;--panel:#17171b;--line:#2a2a31;--txt:#f3f3f5;--dim:#8d8d98;--acc:#d7ff3a;--acc2:#ff4f7b}
+[hidden]{display:none!important}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,sans-serif}
 body{padding:14px 14px 120px;max-width:720px;margin:0 auto}
@@ -100,6 +101,8 @@ button:disabled{opacity:.35;cursor:default}
   <div class="stage">
     <video id="pv" playsinline preload="auto" muted></video>
     <img id="pimg" hidden style="width:100%;height:100%;object-fit:contain">
+    <img id="scrubImg" hidden style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000">
+    <div id="scrubLbl" hidden style="position:absolute;top:10px;left:50%;transform:translateX(-50%);background:var(--acc);color:#111;font-weight:700;padding:6px 12px;border-radius:10px;font-size:14px"></div>
     <button class="playbtn" id="playBtn">▶</button>
     <div class="tc" id="tc">0:00.0</div>
   </div>
@@ -267,18 +270,28 @@ async function selectSource(s, start = 0) {
   pv.currentTime = selStart;
   renderTrack();
   if (!s.strip && s.duration) {
-    const N = 8, out = [];
-    for (let i = 0; i < N; i++) { try { out.push(await grab(s.url, (i + 0.5) * s.duration / N, 120)); } catch (e) {} }
-    s.strip = out; if (cur === s) renderTrack();
+    const N = 16, out = new Array(N).fill(null); s.strip = out;
+    // coarse pass first (every 4th frame), then fill in, so the strip appears quickly
+    const order = []; for (let k = 0; k < 4; k++) for (let i = k * 0 + (k === 0 ? 0 : [2, 1, 3][k - 1]); i < N; i += 4) order.push(i);
+    for (const i of order) {
+      try { out[i] = await grab(s.url, (i + 0.5) * s.duration / N, 200); } catch (e) {}
+      if (cur === s) renderStrip();
+    }
   }
 }
 
 // ---- timeline ----
 function clamp(t) { const d = cur ? cur.duration : 0; return Math.max(0, Math.min(t, d - LEN)); }
+function renderStrip() {
+  if (!cur || cur.type === 'image') return;
+  const st = cur.strip || [];
+  // fill gaps with nearest loaded frame so the strip looks complete while loading
+  $('strip').innerHTML = st.map((u, i) => { let v = u; for (let d = 1; !v && d < st.length; d++) v = st[i - d] || st[i + d]; return v ? `<img src="${v}">` : '<img>'; }).join('');
+}
 function renderTrack() {
   if (!cur || cur.type === 'image') return;
   const d = cur.duration || 1;
-  $('strip').innerHTML = (cur.strip || []).map(u => `<img src="${u}">`).join('');
+  renderStrip();
   $('marks').innerHTML = clips.filter(c => c.srcId === cur.id).map(c => `<div class="mark" style="left:${c.start / d * 100}%;width:${LEN / d * 100}%"></div>`).join('');
   const short = cur.duration && cur.duration < LEN;
   $('win').style.display = short ? 'none' : '';
@@ -296,14 +309,43 @@ track.addEventListener('pointerdown', e => {
   setSel(tFromX(e.clientX));
 });
 track.addEventListener('pointermove', e => { if (dragging) setSel(tFromX(e.clientX)); });
-const endDrag = () => { if (!dragging) return; dragging = false; startLoop(); };
+const endDrag = () => { if (!dragging) return; dragging = false; $('scrubLbl').hidden = true; seekTarget = null; startLoop(); };
 track.addEventListener('pointerup', endDrag); track.addEventListener('pointercancel', endDrag);
+// Seek throttling: only one seek in flight; always jump to the latest target when it lands.
+let seekBusy = false, seekTarget = null, seekSafety;
+function scrubTo(t) { seekTarget = t; if (!seekBusy) doSeek(); }
+function doSeek() {
+  if (seekTarget == null) return;
+  seekBusy = true; const t = seekTarget; seekTarget = null;
+  clearTimeout(seekSafety); seekSafety = setTimeout(() => { seekBusy = false; doSeek(); }, 1200);
+  pv.currentTime = t;
+}
+pv.addEventListener('seeked', () => {
+  clearTimeout(seekSafety); seekBusy = false;
+  if (seekTarget != null) return doSeek();
+  if (Math.abs(pv.currentTime - selStart) < 0.6) $('scrubImg').hidden = true;
+});
+function stripFrameAt(t) {
+  const st = cur && cur.strip; if (!st || !st.length || !cur.duration) return null;
+  const i = Math.min(st.length - 1, Math.floor(t / cur.duration * st.length));
+  for (let d = 0; d < st.length; d++) { if (st[i - d]) return st[i - d]; if (st[i + d]) return st[i + d]; }
+  return null;
+}
 function setSel(t) {
   selStart = clamp(t);
-  if (pv.fastSeek && dragging) pv.fastSeek(selStart); else pv.currentTime = selStart;
+  if (dragging) {
+    const lbl = $('scrubLbl'); lbl.hidden = false; lbl.textContent = 'Starts ' + fmt(selStart);
+    if (Math.abs(pv.currentTime - selStart) > 0.6) { const f = stripFrameAt(selStart + LEN / 2); if (f) { $('scrubImg').src = f; $('scrubImg').hidden = false; } }
+    scrubTo(selStart);
+  } else { pv.currentTime = selStart; }
   renderTrack();
 }
-function startLoop() { looping = true; pv.muted = false; pv.currentTime = selStart; pv.play().catch(() => {}); setPlayIcon(); }
+function startLoop() {
+  looping = true; pv.muted = false; pv.currentTime = selStart;
+  pv.play().catch(() => {}); setPlayIcon();
+  const hide = () => { $('scrubImg').hidden = true; pv.removeEventListener('playing', hide); };
+  pv.addEventListener('playing', hide); setTimeout(hide, 1500);
+}
 $('back').onclick = () => { if (cur) { selStart = clamp(selStart - 0.5); renderTrack(); startLoop(); } };
 $('fwd').onclick = () => { if (cur) { selStart = clamp(selStart + 0.5); renderTrack(); startLoop(); } };
 $('playBtn').onclick = () => { if (pv.paused) startLoop(); else { pv.pause(); looping = false; } setPlayIcon(); };
