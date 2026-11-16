@@ -1,7 +1,7 @@
 {
-  "name": "3 Second Edit",
-  "short_name": "3s Edit",
-  "description": "Tap moments, get 3-second clips with slow pan and zoom",
+  "name": "Fish Alive",
+  "short_name": "Fish Alive",
+  "description": "Tap moments, get 1-5 second clips with slow pan and zoom",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
