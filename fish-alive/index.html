@@ -5,139 +5,154 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Fish Alive</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#CFE6E8">
+<meta name="theme-color" content="#16171B">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;650;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --sea:#CFE6E8;      /* page: sea glass */
-  --foam:#F6FBFB;     /* surfaces */
-  --ink:#0F2E44;      /* text, stage frame */
-  --tide:#557685;     /* secondary text */
-  --line:#AECFD4;     /* hairlines */
-  --bob:#E8432E;      /* bobber red: the one accent */
-  --bob-d:#C7321F;
+  --bg:#16171B;      /* app background: neutral graphite */
+  --s1:#1F2025;      /* panels */
+  --s2:#2A2B31;      /* controls */
+  --hair:#34353C;    /* dividers */
+  --tx:#F3F3F5;      /* primary text */
+  --tx2:#9C9DA6;     /* secondary text */
+  --ac:#3D7BFF;      /* accent: selection + primary */
+  --ac2:#2F67E6;
+  --red:#FF5A5F;
 }
 [hidden]{display:none!important}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--sea);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:16px;line-height:1.4}
-body{padding:14px 16px 128px;max-width:640px;margin:0 auto}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:Geist,'Inter',system-ui,sans-serif;font-size:15px;line-height:1.4;-webkit-font-smoothing:antialiased}
+body{padding:0 0 112px;max-width:620px;margin:0 auto}
 button{font:inherit;border:0;cursor:pointer;color:inherit;background:none}
 button:disabled{opacity:.35;cursor:default}
-button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+svg{display:block}
 .row{display:flex;gap:8px;align-items:center}
+.tnum{font-variant-numeric:tabular-nums}
 
-/* header */
-.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:6px 0 2px}
-h1{margin:0;font-weight:800;font-size:40px;line-height:.9;letter-spacing:-1.5px;font-stretch:75%;font-variation-settings:'wdth' 75}
-h1 small{display:block;font-size:15px;letter-spacing:0;font-weight:500;color:var(--tide);margin-top:8px;font-stretch:100%;font-variation-settings:'wdth' 100}
-.btn{padding:13px 18px;font-weight:700;border-radius:999px}
-.primary{background:var(--bob);color:#fff}
-.primary:active{background:var(--bob-d)}
-.ghost{border:2px solid var(--ink)}
-.small{padding:7px 12px;font-size:13px;border-width:1.5px;white-space:nowrap}
-#installHelp{background:var(--foam);border-radius:14px;padding:10px 12px;font-size:14px;margin:10px 0 0}
+/* app bar */
+.top{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(22,23,27,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--hair)}
+h1{margin:0;font-size:17px;font-weight:650;letter-spacing:-.2px}
+h1 small{display:none}
+.btn{padding:12px 18px;font-weight:600;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.primary{background:var(--ac);color:#fff}
+.primary:active{background:var(--ac2)}
+.ghost{background:var(--s2)}
+.small{padding:7px 12px;font-size:13px;border-radius:9px}
+#installHelp{margin:10px 16px 0;background:var(--s1);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--tx2)}
+#installHelp b{color:var(--tx)}
 
-/* section headings: sentence case, quiet */
-.label{display:flex;justify-content:space-between;align-items:baseline;margin:22px 0 8px;font-weight:700;font-size:17px}
-.label .meta{font-weight:500;font-size:14px;color:var(--tide)}
+.pad{padding:0 16px}
+.label{display:flex;justify-content:space-between;align-items:baseline;margin:20px 16px 10px;font-weight:600;font-size:14px;color:var(--tx)}
+.label .meta{font-weight:500;font-size:13px;color:var(--tx2)}
 
-/* empty */
-.empty{margin-top:28px;background:var(--foam);border-radius:28px;padding:36px 22px 28px;text-align:center}
-.empty .big{font-weight:800;font-size:28px;line-height:1.05;letter-spacing:-.5px;margin-bottom:10px}
-.empty p{color:var(--tide);margin:0 auto 22px;max-width:30ch}
-.empty .nums{display:flex;justify-content:center;gap:8px;margin-bottom:22px}
-.empty .nums span{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--sea)}
-.empty .nums span:last-child{background:var(--bob);color:#fff}
+/* empty state */
+.empty{padding:40px 24px 0;display:flex;flex-direction:column;min-height:calc(100vh - 160px)}
+.empty .big{font-size:30px;line-height:1.1;font-weight:700;letter-spacing:-.8px;margin:0 0 10px;max-width:16ch}
+.empty p{color:var(--tx2);margin:0 0 28px;max-width:34ch}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.steps li{display:flex;gap:14px;align-items:center;background:var(--s1);border-radius:14px;padding:14px}
+.steps b{width:30px;height:30px;flex:0 0 30px;border-radius:9px;background:var(--s2);display:grid;place-items:center;font-size:14px}
+.steps span{font-weight:600}
+.steps em{display:block;font-style:normal;color:var(--tx2);font-size:13px;font-weight:400}
+.empty .cta{margin-top:auto;padding:24px 0 8px}
+.empty .cta .btn{width:100%;padding:16px;font-size:16px}
+.empty .cta small{display:block;text-align:center;color:var(--tx2);font-size:12px;margin-top:10px}
 
-/* media row */
-.sources{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none}
-.src{flex:0 0 auto;width:72px;cursor:pointer;position:relative}
-.src img,.src .ph{width:72px;height:72px;object-fit:cover;border-radius:16px;display:block;background:var(--line);outline:3px solid transparent;outline-offset:2px}
-.src.on img,.src.on .ph{outline-color:var(--ink)}
-.src .n{font-size:12px;color:var(--tide);margin-top:5px;text-align:center;font-variant-numeric:tabular-nums}
-.src .cnt{position:absolute;top:-4px;right:-4px;background:var(--bob);color:#fff;font-size:12px;font-weight:800;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;padding:0 6px;border:2px solid var(--sea)}
-.addsrc{flex:0 0 auto;width:72px;height:72px;border-radius:16px;border:2px dashed var(--tide);font-size:28px;color:var(--tide)}
+/* media bin */
+.sources{display:flex;gap:8px;overflow-x:auto;padding:2px 16px 4px;scrollbar-width:none}
+.sources::-webkit-scrollbar,.clips::-webkit-scrollbar{display:none}
+.src{flex:0 0 auto;width:60px;cursor:pointer;position:relative}
+.src img,.src .ph{width:60px;height:60px;object-fit:cover;border-radius:10px;display:block;background:var(--s2);box-shadow:0 0 0 2px transparent;transition:box-shadow .15s}
+.src.on img,.src.on .ph{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ac)}
+.src .n{font-size:11px;color:var(--tx2);margin-top:5px;text-align:center;font-variant-numeric:tabular-nums}
+.src .cnt{position:absolute;top:4px;right:4px;background:var(--ac);color:#fff;font-size:11px;font-weight:700;border-radius:999px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 5px}
+.addsrc{flex:0 0 auto;width:60px;height:60px;border-radius:10px;background:var(--s1);border:1px dashed #4a4b53;color:var(--tx2);display:grid;place-items:center}
 
-/* stage */
-#srcName{font-size:13px;color:var(--tide);margin:14px 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stagewrap{background:var(--ink);border-radius:24px;padding:10px}
-.stage{background:#000;border-radius:16px;overflow:hidden;position:relative;aspect-ratio:9/16;margin:0 auto}
+/* preview */
+#srcName{display:none}
+.stagewrap{margin-top:14px;background:#000;padding:12px 0}
+.stage{background:#000;border-radius:8px;overflow:hidden;position:relative;aspect-ratio:9/16;margin:0 auto}
 #scv{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
-.chip{position:absolute;top:10px;right:10px;background:var(--foam);color:var(--ink);font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px}
-.pinchHint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(15,46,68,.75);color:#fff;font-size:13px;padding:6px 12px;border-radius:999px;pointer-events:none;white-space:nowrap;transition:opacity .4s}
-#scrubImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--ink)}
-#scrubLbl{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:var(--bob);color:#fff;font-weight:800;padding:6px 12px;border-radius:999px;font-size:14px;font-variant-numeric:tabular-nums}
-.playbtn{position:absolute;left:10px;bottom:10px;width:46px;height:46px;border-radius:50%;background:var(--foam);color:var(--ink);font-size:16px}
-.tc{position:absolute;right:10px;bottom:16px;color:#fff;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.chip{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);color:#fff;font-size:12px;font-weight:600;padding:6px 10px;border-radius:8px}
+.pinchHint{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(0,0,0,.6);backdrop-filter:blur(8px);color:#fff;font-size:12px;padding:6px 10px;border-radius:8px;pointer-events:none;white-space:nowrap;transition:opacity .4s}
+#scrubImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+#scrubLbl{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:var(--ac);color:#fff;font-weight:600;padding:5px 10px;border-radius:8px;font-size:13px;font-variant-numeric:tabular-nums}
+.playbtn{position:absolute;left:10px;bottom:10px;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);color:#fff;display:grid;place-items:center}
+.tc{position:absolute;right:10px;bottom:20px;color:#fff;font-size:12px;font-weight:500;font-variant-numeric:tabular-nums;background:rgba(0,0,0,.55);padding:3px 7px;border-radius:6px}
 
 /* timeline */
-.track{position:relative;height:58px;margin-top:10px;border-radius:12px;overflow:hidden;background:#2a4a60;touch-action:none;cursor:pointer;user-select:none}
+#vidOnly{padding:0 16px}
+.track{position:relative;height:52px;margin-top:12px;border-radius:8px;overflow:hidden;background:var(--s1);touch-action:none;cursor:pointer;user-select:none}
 .strip{position:absolute;inset:0;display:flex}
-.strip img{flex:1;min-width:0;height:100%;object-fit:cover;opacity:.6}
-.mark{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.45) 0 4px,transparent 4px 9px)}
-.win{position:absolute;top:0;bottom:0;border:3px solid var(--bob);border-radius:10px;background:rgba(232,67,46,.12);box-shadow:0 0 0 999px rgba(15,46,68,.35)}
-.win:after{content:attr(data-len);position:absolute;top:3px;left:5px;font-size:12px;font-weight:800;color:#fff;background:var(--bob);border-radius:999px;padding:0 6px}
-.head{position:absolute;top:0;bottom:0;width:2px;background:#fff;pointer-events:none}
-.hint{font-size:13px;color:var(--tide);margin-top:6px;text-align:center}
+.strip img{flex:1;min-width:0;height:100%;object-fit:cover;opacity:.55}
+.mark{position:absolute;top:0;bottom:0;background:rgba(255,255,255,.18);border-left:1px solid rgba(255,255,255,.5);border-right:1px solid rgba(255,255,255,.5)}
+.win{position:absolute;top:0;bottom:0;border:2px solid var(--ac);border-radius:8px;box-shadow:0 0 0 999px rgba(0,0,0,.45)}
+.win:before,.win:after{content:'';position:absolute;top:50%;width:4px;height:18px;margin-top:-9px;background:var(--ac);border-radius:2px}
+.win:before{left:-3px}.win:after{right:-3px}
+.head{position:absolute;top:0;bottom:0;width:2px;background:#fff;pointer-events:none;box-shadow:0 0 4px rgba(0,0,0,.6)}
+.hint{font-size:12px;color:var(--tx2);margin:8px 16px 0;text-align:center}
 
-/* controls */
-.controls{display:flex;gap:8px;margin-top:12px}
-.nudge{width:64px;border-radius:999px;border:2px solid var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
-.add{flex:1;font-size:17px;padding:15px}
+/* tools */
+.controls{display:flex;gap:8px;margin:12px 16px 0}
+.nudge{width:56px;border-radius:12px;background:var(--s2);font-weight:600;font-size:13px;font-variant-numeric:tabular-nums}
+.add{flex:1;font-size:15px;padding:14px}
 
-/* length picker: the rhyme */
-.lens{display:flex;justify-content:space-between;gap:6px}
-.lens button{flex:1;aspect-ratio:1;max-width:64px;border-radius:50%;background:var(--foam);font-weight:800;font-size:26px;font-stretch:75%;font-variation-settings:'wdth' 75;color:var(--ink);position:relative;transition:transform .15s}
-.lens button small{position:absolute;bottom:8px;left:0;right:0;font-size:11px;font-weight:600;color:var(--tide);font-stretch:100%}
-.lens button.on{background:var(--bob);color:#fff;transform:translateY(-3px)}
-.lens button.on small{color:rgba(255,255,255,.8)}
+/* clip length */
+.lens{display:flex;background:var(--s1);border-radius:12px;padding:4px;margin:0 16px}
+.lens button{flex:1;padding:9px 0;border-radius:9px;font-weight:600;font-size:14px;color:var(--tx2);font-variant-numeric:tabular-nums}
+.lens button small{font-size:inherit;font-weight:inherit}
+.lens button.on{background:var(--s2);color:var(--tx);box-shadow:inset 0 0 0 1px #45464e}
 
-/* clips */
-.clips{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 8px;min-height:40px;scrollbar-width:none}
-.clip{flex:0 0 auto;width:104px;background:var(--foam);border-radius:18px;overflow:hidden;position:relative}
-.clip img,.clip .ph{width:104px;height:104px;object-fit:cover;display:block;background:var(--line);cursor:pointer}
-.clip .num{position:absolute;top:6px;left:6px;background:var(--ink);color:#fff;font-size:12px;font-weight:800;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;padding:0 6px}
-.clip .frm{position:absolute;top:80px;left:6px;background:var(--foam);color:var(--ink);font-size:12px;font-weight:800;border-radius:999px;padding:1px 7px}
-.clip .mot{position:absolute;top:6px;right:6px;background:var(--foam);color:var(--ink);font-size:13px;font-weight:800;border-radius:999px;width:26px;height:26px}
-.clip .t{font-size:12px;color:var(--tide);padding:5px 8px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
-.clip .ops{display:flex}
-.clip .ops button{flex:1;padding:8px 0;font-size:14px;font-weight:700}
-.clip .ops button.x{color:var(--bob)}
-.noclips{color:var(--tide);font-size:14px;padding:8px 0;max-width:40ch}
+/* your clips: a timeline track, width follows clip length */
+.clips{display:flex;gap:4px;overflow-x:auto;padding:4px 16px 8px;min-height:40px;scrollbar-width:none;align-items:flex-start}
+.clip{flex:0 0 auto;background:var(--s1);border-radius:10px;overflow:hidden;position:relative}
+.clip img,.clip .ph{width:100%;height:78px;object-fit:cover;display:block;background:var(--s2);cursor:pointer}
+.clip .num{position:absolute;top:5px;left:5px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:600;border-radius:6px;padding:1px 6px}
+.clip .frm{position:absolute;top:56px;left:5px;background:var(--ac);color:#fff;border-radius:6px;padding:2px 4px}
+.clip .mot{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.6);color:#fff;border-radius:6px;width:24px;height:22px;display:grid;place-items:center}
+.clip .t{font-size:11px;color:var(--tx2);padding:5px 7px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.clip .ops{display:flex;padding:2px 2px 4px}
+.clip .ops button{flex:1;padding:6px 0;color:var(--tx2);display:grid;place-items:center;border-radius:6px}
+.clip .ops button:active{background:var(--s2)}
+.clip .ops button.x{color:var(--red)}
+.noclips{color:var(--tx2);font-size:13px;padding:14px;background:var(--s1);border-radius:12px;width:100%}
 
 /* settings */
-.settings{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.seg{display:flex;background:var(--foam);border-radius:999px;padding:4px}
-.seg button{flex:1;padding:9px 0;font-size:14px;font-weight:600;color:var(--tide);border-radius:999px}
-.seg button.on{background:var(--ink);color:#fff}
+.settings{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px}
+.seg{display:flex;background:var(--s1);border-radius:12px;padding:4px}
+.seg button{flex:1;padding:8px 0;font-size:13px;font-weight:600;color:var(--tx2);border-radius:9px}
+.seg button.on{background:var(--s2);color:var(--tx);box-shadow:inset 0 0 0 1px #45464e}
 
 /* bottom bar */
-.bar{position:fixed;left:0;right:0;bottom:0;background:var(--sea);border-top:1.5px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
-.bar .in{max-width:640px;margin:0 auto;display:flex;gap:8px}
-.bar .primary{flex:1;font-size:17px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(22,23,27,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--hair);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+.bar .in{max-width:620px;margin:0 auto;display:flex;gap:8px}
+.bar .ghost{padding:14px 20px}
+.bar .primary{flex:1;font-size:15px;padding:14px}
 
 /* sheets */
-.modal{position:fixed;inset:0;background:rgba(15,46,68,.82);display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:flex-end;justify-content:center;z-index:10}
 .modal.on{display:flex}
-.sheet{background:var(--foam);border-radius:28px;padding:18px;width:100%;max-width:440px;max-height:96vh;overflow:auto;text-align:center}
-.sheet h2{margin:0 0 2px;font-size:20px;font-weight:800}
-.sheet canvas,.sheet video{max-width:100%;max-height:56vh;border-radius:16px;background:var(--ink);display:block;margin:0 auto}
-.prog{height:8px;background:var(--line);border-radius:999px;margin:16px 0 8px;overflow:hidden}
-.prog i{display:block;height:100%;width:0;background:var(--bob);transition:width .2s}
-.msg{font-size:14px;color:var(--tide);min-height:20px}
+.sheet{background:var(--s1);border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));width:100%;max-width:620px;max-height:96vh;overflow:auto;text-align:center;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+.sheet h2{margin:0 0 2px;font-size:17px;font-weight:650}
+.sheet canvas,.sheet video{max-width:100%;max-height:58vh;border-radius:10px;background:#000;display:block;margin:0 auto}
+.prog{height:4px;background:var(--s2);border-radius:999px;margin:16px 0 8px;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--ac);transition:width .2s}
+.msg{font-size:13px;color:var(--tx2);min-height:18px}
 .sheet .row{justify-content:center;margin-top:14px;flex-wrap:wrap}
-.toast{position:fixed;left:50%;top:14px;transform:translateX(-50%) translateY(-8px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;z-index:20;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;max-width:90vw;text-align:center}
+.toast{position:fixed;left:50%;top:62px;transform:translateX(-50%) translateY(-6px);background:#fff;color:#16171B;padding:9px 14px;border-radius:10px;font-size:13px;font-weight:600;z-index:20;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;max-width:90vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .toast.on{opacity:1;transform:translateX(-50%)}
-#rv,#tv,#pv,#fv{position:fixed;width:2px;height:2px;opacity:.01;left:0;top:0;pointer-events:none}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+#rv,#tv,#pv{position:fixed;width:2px;height:2px;opacity:.01;left:0;top:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
 <div class="top">
-  <h1>Fish Alive<small>1, 2, 3, 4, 5. Catch the moments you want.</small></h1>
+  <h1>Fish Alive</h1>
   <button class="btn ghost small" id="installBtn" hidden>Install app</button>
 </div>
 <div id="installHelp" hidden>To install, tap <b>⋮</b> in Chrome, then <b>Add to home screen</b>.</div>
@@ -145,14 +160,21 @@ h1 small{display:block;font-size:15px;letter-spacing:0;font-weight:500;color:var
 <input type="file" id="file" accept="video/*,image/*" multiple hidden>
 
 <div id="emptyView" class="empty">
-  <div class="nums"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
-  <div class="big">Throw in your videos and photos</div>
-  <p>Add as many as you like. Nothing is uploaded; everything stays on your phone.</p>
-  <button class="btn primary" id="pickBtn">Add videos and photos</button>
+  <div class="big">Turn your clips into a highlight reel</div>
+  <p>Pick the moments you want. Each becomes a clip of exactly 1 to 5 seconds, with smooth pan and zoom.</p>
+  <ol class="steps">
+    <li><b>1</b><span>Add videos and photos<em>Straight from your gallery</em></span></li>
+    <li><b>2</b><span>Tap the moments you want<em>Pinch to frame each shot</em></span></li>
+    <li><b>3</b><span>Export your reel<em>Ready for TikTok, Reels or Shorts</em></span></li>
+  </ol>
+  <div class="cta">
+    <button class="btn primary" id="pickBtn">Add videos and photos</button>
+    <small>Everything stays on your phone. Nothing is uploaded.</small>
+  </div>
 </div>
 
 <div id="editView" hidden>
-  <div class="label">Your media</div>
+  <div class="label">Media</div>
   <div class="sources" id="sources"></div>
 
   <div id="srcName">—</div>
@@ -163,8 +185,9 @@ h1 small{display:block;font-size:15px;letter-spacing:0;font-weight:500;color:var
     <div class="pinchHint" id="pinchHint">Pinch and drag to frame</div>
     <img id="scrubImg" hidden alt="">
     <div id="scrubLbl" hidden></div>
-    <button class="playbtn" id="playBtn" aria-label="Play">▶</button>
+    <button class="playbtn" id="playBtn" aria-label="Play"></button>
     <div class="tc" id="tc">0:00.0</div>
+  </div>
   </div>
   <div id="vidOnly">
   <div class="track" id="track">
@@ -174,46 +197,45 @@ h1 small{display:block;font-size:15px;letter-spacing:0;font-weight:500;color:var
     <div class="head" id="head"></div>
   </div>
   </div>
-  </div>
   <div class="hint" id="hint"></div>
   <div class="controls" id="vidControls">
-    <button class="nudge" id="back" aria-label="Back half a second">−0.5</button>
-    <button class="btn primary add" id="addBtn">Catch 3s</button>
-    <button class="nudge" id="fwd" aria-label="Forward half a second">+0.5</button>
+    <button class="nudge" id="back" aria-label="Back half a second">−0.5s</button>
+    <button class="btn primary add" id="addBtn">Add clip</button>
+    <button class="nudge" id="fwd" aria-label="Forward half a second">+0.5s</button>
   </div>
-  <div class="controls" id="imgOnly" hidden><button class="btn primary add" id="addImgBtn">Catch this photo again</button></div>
+  <div class="controls" id="imgOnly" hidden><button class="btn primary add" id="addImgBtn">Add this photo again</button></div>
 
   <div class="label">Clip length</div>
-  <div class="lens" id="lenSeg"><button data-v="1">1<small>sec</small></button><button data-v="2">2<small>sec</small></button><button data-v="3" class="on">3<small>sec</small></button><button data-v="4">4<small>sec</small></button><button data-v="5">5<small>sec</small></button></div>
+  <div class="lens" id="lenSeg"><button data-v="1">1s</button><button data-v="2">2s</button><button data-v="3" class="on">3s</button><button data-v="4">4s</button><button data-v="5">5s</button></div>
 
-  <div class="label">Your catch <span class="meta" id="total">0 clips, 0s</span></div>
+  <div class="label">Your reel <span class="meta" id="total">0 clips, 0s</span></div>
   <div class="clips" id="clips"></div>
 
-  <div class="label">Settings</div>
+  <div class="label">Output</div>
   <div class="settings">
     <div class="seg" id="fmtSeg"><button data-v="9:16" class="on">9:16</button><button data-v="1:1">1:1</button><button data-v="16:9">16:9</button></div>
     <div class="seg" id="fitSeg"><button data-v="fill" class="on">Fill</button><button data-v="fit">Fit</button></div>
     <div class="seg" id="audSeg"><button data-v="on" class="on">Sound on</button><button data-v="off">Muted</button></div>
-    <div class="seg" id="ordSeg"><button data-v="keep" class="on">My order</button><button data-v="shuffle">Shuffle</button></div>
-    <div class="seg" id="motSeg" style="grid-column:1/-1"><button data-v="on" class="on">Slow pan and zoom</button><button data-v="off">No motion</button></div>
+    <div class="seg" id="ordSeg"><button data-v="keep" class="on">In order</button><button data-v="shuffle">Shuffle</button></div>
+    <div class="seg" id="motSeg" style="grid-column:1/-1"><button data-v="on" class="on">Pan and zoom</button><button data-v="off">No motion</button></div>
   </div>
 </div>
 
 <div class="bar" id="bar" hidden><div class="in">
   <button class="btn ghost" id="previewBtn">Preview</button>
-  <button class="btn primary" id="exportBtn">Export video</button>
+  <button class="btn primary" id="exportBtn">Export</button>
 </div></div>
 
 <div class="modal" id="framer"><div class="sheet">
-  <h2>Frame this clip</h2>
-  <div class="msg" style="margin-bottom:12px">Pinch to zoom, drag to move. This is exactly what your video shows.</div>
+  <h2>Frame clip</h2>
+  <div class="msg" style="margin-bottom:12px">Pinch to zoom, drag to move. This is exactly what your reel shows.</div>
   <canvas id="fcv" style="touch-action:none;cursor:grab"></canvas>
   <div class="row" style="margin-top:14px;gap:6px">
     <button class="btn ghost small" id="fZoomOut" aria-label="Zoom out">−</button>
-    <button class="btn ghost small" id="fReset">Reset</button>
     <button class="btn ghost small" id="fZoomIn" aria-label="Zoom in">+</button>
+    <button class="btn ghost small" id="fReset">Reset</button>
     <button class="btn ghost small" id="fJump">Go to clip</button>
-    <button class="btn primary" id="fDone">Done</button>
+    <button class="btn primary" id="fDone" style="margin-left:auto">Done</button>
   </div>
 </div></div>
 <div class="modal" id="modal"><div class="sheet">
@@ -239,7 +261,17 @@ const pv = $('pv'), rv = $('rv'), tv = $('tv'), cv = $('cv');
 let sources = [], clips = [], cur = null, selStart = 0, looping = false, dragging = false;
 let opts = { fmt: '9:16', fit: 'fill', aud: 'on', ord: 'keep', mot: 'on' };
 const MOTIONS = ['zoom-in', 'left', 'right', 'up', 'down']; // never zoom out
-const MICON = { 'zoom-in': '⊕', 'zoom-out': '⊖', left: '←', right: '→', up: '↑', down: '↓', none: '•' };
+const IC = {
+  play: '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5v11a.5.5 0 0 0 .77.42l8.5-5.5a.5.5 0 0 0 0-.84l-8.5-5.5A.5.5 0 0 0 4 2.5z"/></svg>',
+  pause: '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="3.5" y="2.5" width="3" height="11" rx="1"/><rect x="9.5" y="2.5" width="3" height="11" rx="1"/></svg>',
+  left: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg>',
+  right: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5 10.5 8 6 12.5"/></svg>',
+  trash: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5h11M6.5 4.5V3h3v1.5M4 4.5l.7 8.6a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9l.7-8.6"/></svg>',
+  plus: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg>',
+  crop: '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 1v11h11M1 4h11v11"/></svg>'
+};
+const MICON = (() => { const a = d => `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
+  return { 'zoom-in': a('M7 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM10 10l3.5 3.5M7 5.5v3M5.5 7h3'), left: a('M13 8H3M7 4 3 8l4 4'), right: a('M3 8h10M9 4l4 4-4 4'), up: a('M8 13V3M4 7l4-4 4 4'), down: a('M8 3v10M4 9l4 4 4-4'), none: a('M8 7.5v1') }; })();
 let lastMot = '';
 function randMotion() { let m; do { m = MOTIONS[Math.floor(Math.random() * MOTIONS.length)]; } while (m === lastMot); return lastMot = m; }
 let uid = 0, busy = false, abort = false;
@@ -401,7 +433,7 @@ function renderSources() {
     };
     el.appendChild(d);
   });
-  const a = document.createElement('button'); a.className = 'addsrc'; a.textContent = '+'; a.onclick = () => $('file').click();
+  const a = document.createElement('button'); a.className = 'addsrc'; a.innerHTML = IC.plus; a.setAttribute('aria-label', 'Add more'); a.onclick = () => $('file').click();
   el.appendChild(a);
 }
 
@@ -442,7 +474,7 @@ function renderTrack() {
   $('win').style.width = (LEN / d * 100) + '%';
   $('addBtn').disabled = short || !cur.duration;
   $('win').dataset.len = LEN + 's';
-  $('addBtn').textContent = short ? 'Too short (under ' + LEN + 's)' : 'Catch ' + LEN + 's at ' + fmt(selStart);
+  $('addBtn').textContent = short ? 'Too short (under ' + LEN + 's)' : 'Add ' + LEN + 's clip at ' + fmt(selStart);
   $('hint').textContent = short ? 'This video is under ' + LEN + ' seconds, so pick a shorter clip length' : 'Tap or drag the timeline to pick where your ' + LEN + ' seconds start';
 }
 function tFromX(x) { const r = $('track').getBoundingClientRect(); return Math.max(0, Math.min(1, (x - r.left) / r.width)) * (cur.duration || 0); }
@@ -493,7 +525,7 @@ function startLoop() {
 $('back').onclick = () => { if (cur) { selStart = clamp(selStart - 0.5); renderTrack(); startLoop(); } };
 $('fwd').onclick = () => { if (cur) { selStart = clamp(selStart + 0.5); renderTrack(); startLoop(); } };
 $('playBtn').onclick = () => { if (pv.paused) startLoop(); else { pv.pause(); looping = false; } setPlayIcon(); };
-function setPlayIcon() { $('playBtn').textContent = pv.paused ? '▶' : '❚❚'; }
+function setPlayIcon() { $('playBtn').innerHTML = pv.paused ? IC.play : IC.pause; }
 pv.addEventListener('play', setPlayIcon); pv.addEventListener('pause', setPlayIcon);
 const scv = $('scv'), sctx = scv.getContext('2d');
 function setStageShape() {
@@ -527,8 +559,8 @@ const stageEl = () => cur && cur.type === 'image' ? cur.img : pv;
 async function addClip(s, start, quiet) {
   const c = { id: ++uid, srcId: s.id, start, len: LEN, frame: s.frame ? { ...s.frame } : null, thumb: s.type === 'image' ? s.thumb : null, motion: randMotion() };
   clips.push(c); renderClips(); renderTrack(); renderSources();
-  if (!quiet && clips.length === 1) toast('Caught! Tap the clip below to frame it');
-  else if (!quiet) toast('Caught clip ' + clips.length + (s.type === 'image' ? ' (photo)' : ' (' + fmt(start) + ')'));
+  if (!quiet && clips.length === 1) toast('Clip added. Tap it below to reframe');
+  else if (!quiet) toast('Clip ' + clips.length + ' added');
   requestAnimationFrame(() => { const el = $('clips'); el.scrollLeft = el.scrollWidth; });
   if (s.type !== 'image') { c.thumb = stripFrameFor(s, start + c.len / 2) || s.thumb; renderClips(); }
 }
@@ -536,11 +568,12 @@ $('addBtn').onclick = () => { if (cur && cur.type !== 'image' && cur.duration >=
 $('addImgBtn').onclick = () => { if (cur && cur.type === 'image') addClip(cur, 0); };
 function renderClips() {
   const el = $('clips'); el.innerHTML = '';
-  if (!clips.length) el.innerHTML = '<div class="noclips">Nothing caught yet. Pick a moment above and tap Catch.</div>';
+  if (!clips.length) el.innerHTML = '<div class="noclips">No clips yet. Pick a moment above and tap Add clip.</div>';
   clips.forEach((c, i) => {
     const s = sources.find(x => x.id === c.srcId);
     const d = document.createElement('div'); d.className = 'clip';
-    d.innerHTML = (c.thumb ? `<img src="${c.thumb}">` : `<div class="ph"></div>`) + `<div class="num">${i + 1}</div>${c.frame ? '<div class="frm">✥</div>' : ''}<button class="mot" data-a="m" title="Change motion">${MICON[c.motion] || '•'}</button><div class="t">${c.len}s, ${s && s.type === 'image' ? 'photo' : 'from ' + fmt(c.start)}</div><div class="ops"><button data-a="l">◀</button><button data-a="x" class="x">✕</button><button data-a="r">▶</button></div>`;
+    d.innerHTML = (c.thumb ? `<img src="${c.thumb}">` : `<div class="ph"></div>`) + `<div class="num">${i + 1}</div>${c.frame ? '<div class="frm">' + IC.crop + '</div>' : ''}<button class="mot" data-a="m" aria-label="Change motion">${MICON[c.motion] || MICON.none}</button><div class="t">${c.len}s · ${s && s.type === 'image' ? 'photo' : fmt(c.start)}</div><div class="ops"><button data-a="l" aria-label="Move left">${IC.left}</button><button data-a="x" class="x" aria-label="Delete">${IC.trash}</button><button data-a="r" aria-label="Move right">${IC.right}</button></div>`;
+    d.style.width = (72 + c.len * 14) + 'px';
     d.querySelector('img,.ph').onclick = () => { if (s) openFramer(c, s); };
     d.querySelectorAll('button').forEach(b => b.onclick = () => {
       const a = b.dataset.a;
@@ -853,7 +886,7 @@ $('lenSeg').querySelectorAll('button').forEach(b => b.onclick = () => {
 });
 $('previewBtn').onclick = () => run(false);
 $('exportBtn').onclick = () => run(true);
-renderClips();
+renderClips(); setPlayIcon();
 </script>
 </body>
 </html>
