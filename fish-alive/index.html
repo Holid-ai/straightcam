@@ -82,7 +82,8 @@ button:disabled{opacity:.35;cursor:default}
 </style>
 </head>
 <body>
-<h1>Fish <span>Alive</span> 🐟</h1>
+<div class="row" style="justify-content:space-between"><h1>Fish <span>Alive</span> 🐟</h1><button class="btn ghost" id="installBtn" hidden style="padding:8px 12px;font-size:13px">⬇ Install app</button></div>
+<div id="installHelp" hidden style="background:var(--panel);border-radius:12px;padding:10px 12px;font-size:13px;margin:8px 0;color:var(--dim)">To install: tap <b style="color:var(--txt)">⋮</b> in Chrome, then <b style="color:var(--txt)">Add to home screen</b> or <b style="color:var(--txt)">Install app</b>.</div>
 <div class="sub">Tap the moments you want. 1, 2, 3, 4, 5… every clip comes out exactly the length you choose.</div>
 
 <input type="file" id="file" accept="video/*,image/*" multiple hidden>
@@ -569,6 +570,16 @@ async function saveVideo() {
 async function shareVideo() {
   try { await navigator.share({ files: [new File([resultBlob], 'fish-alive.' + resultExt, { type: resultBlob.type })] }); } catch (e) {}
 }
+// Install button: use Chrome's install prompt when offered, otherwise show manual steps
+let deferredInstall = null;
+const isInstalled = () => matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone;
+if (!isInstalled()) $('installBtn').hidden = false;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; $('installBtn').hidden = false; });
+window.addEventListener('appinstalled', () => { $('installBtn').hidden = true; $('installHelp').hidden = true; toast('Installed! Find Fish Alive on your home screen'); });
+$('installBtn').onclick = async () => {
+  if (deferredInstall) { deferredInstall.prompt(); try { await deferredInstall.userChoice; } catch (e) {} deferredInstall = null; }
+  else $('installHelp').hidden = !$('installHelp').hidden;
+};
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 $('lenSeg').querySelectorAll('button').forEach(b => b.onclick = () => {
   $('lenSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
