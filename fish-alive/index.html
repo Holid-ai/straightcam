@@ -338,11 +338,20 @@ $('file').onchange = async e => {
   const files = [...e.target.files]; e.target.value = '';
   if (!files.length) return;
   const firstNew = sources.length;
-  for (const f of files) sources.push({ id: ++uid, type: f.type.startsWith('image/') ? 'image' : 'video', name: f.name.replace(/\.[^.]+$/, ''), url: URL.createObjectURL(f), duration: 0, thumb: null, strip: null, bad: false });
+  // Copy every file into the app's own memory straight away. Files picked from Google Photos
+  // are only lent to the browser, and that access can be withdrawn later (videos then go black).
+  toast('Copying ' + files.length + ' file' + (files.length > 1 ? 's' : '') + ' into Fish Alive…');
+  for (const f of files) {
+    const src = { id: ++uid, type: f.type.startsWith('image/') ? 'image' : 'video', name: f.name.replace(/\.[^.]+$/, ''), url: '', duration: 0, thumb: null, strip: null, bad: false };
+    try { const buf = await f.arrayBuffer(); src.url = URL.createObjectURL(new Blob([buf], { type: f.type || 'video/mp4' })); }
+    catch (err) { src.bad = true; src.copyFailed = true; }
+    sources.push(src);
+  }
   $('emptyView').hidden = true; $('editView').hidden = false; $('bar').hidden = false;
   renderSources();
-  if (!cur) selectSource(sources[firstNew]);
+  if (!cur) { const first = sources.slice(firstNew).find(x => !x.bad); if (first) selectSource(first); }
   for (const s of sources.slice(firstNew)) {
+    if (s.copyFailed) { renderSources(); continue; }
     try {
       if (s.type === 'image') { await loadImage(s); addClip(s, 0, true); }
       else {
