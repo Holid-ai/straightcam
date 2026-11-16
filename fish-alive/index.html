@@ -761,18 +761,36 @@ function showSaveButtons() {
 async function saveVideo() {
   const name = 'fish-alive-' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.' + resultExt;
   if (downloads) {
-    try { const r = await downloads.save({ filename: name, data: resultBlob }); if (r.status === 'saved') toast('Saved!'); return; }
+    try { const r = await downloads.save({ filename: name, data: resultBlob }); if (r.status === 'saved') showDone('saved'); return; }
     catch (e) {
       if (e && e.code === 'declined') return;
       if (e && e.code === 'rate_limited') { toast('One moment, then try again'); return; }
     }
   }
   try { const a = document.createElement('a'); a.href = resultURL; a.download = name; document.body.appendChild(a); a.click(); a.remove(); } catch (e) {}
-  $('msg').textContent = 'Saved to your Downloads. If nothing appeared, tap ⋮ on the video above and choose Download.';
+  showDone('saved');
+}
+// After saving or sharing: confirm it, then offer the obvious next steps instead of asking to save again.
+function showDone(kind) {
+  const ov = $('outVideo'); ov.pause();
+  $('msg').innerHTML = kind === 'shared'
+    ? '<b style="color:var(--tx)">Shared.</b> What next?'
+    : '<b style="color:var(--tx)">Saved to your phone.</b> You\'ll find it in Downloads and your Gallery.';
+  setBtns([
+    ['Save again', 'ghost small', saveVideo],
+    ['New reel', 'ghost', newReel],
+    ['Keep editing', 'primary', closeModal]
+  ]);
+}
+function newReel() {
+  clips = []; sources.forEach(x => { x.frame = null; });
+  closeModal(); renderClips(); renderTrack(); renderSources(); updateFrameReset(); stageDirty = true;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast('Fresh start. Your media is still here');
 }
 
 async function shareVideo() {
-  try { await navigator.share({ files: [new File([resultBlob], 'fish-alive.' + resultExt, { type: resultBlob.type })] }); } catch (e) {}
+  try { await navigator.share({ files: [new File([resultBlob], 'fish-alive.' + resultExt, { type: resultBlob.type })] }); showDone('shared'); } catch (e) {}
 }
 // Install button: use Chrome's install prompt when offered, otherwise show manual steps
 let deferredInstall = null;
