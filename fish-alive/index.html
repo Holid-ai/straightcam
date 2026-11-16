@@ -37,6 +37,8 @@ svg{display:block}
 .top{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(22,23,27,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--hair)}
 h1{margin:0;font-size:17px;font-weight:650;letter-spacing:-.2px}
 h1 small{display:none}
+.brand{display:flex;align-items:center;gap:9px}
+.hero-logo{margin:0 0 18px -6px}
 .btn{padding:12px 18px;font-weight:600;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .primary{background:var(--ac);color:#fff}
 .primary:active{background:var(--ac2)}
@@ -152,7 +154,24 @@ h1 small{display:none}
 </head>
 <body>
 <div class="top">
-  <h1>Fish Alive</h1>
+  <h1 class="brand"><svg class="logo" width="30" height="30" viewBox="2 2 60 56" aria-hidden="true"><path d="M47 31 L60 19 Q56.5 32 60 45 Z" fill="#3D7BFF"/>
+  <path d="M8.5 28.5 C10 17 22 10 33.5 10.5 L38.5 3.5 L42 12.5 C46.5 15.5 49.8 21 50.6 27 L50.6 37 C47 46 38 52.5 27 52.5 C18 52.5 10.5 48.5 6.5 44 L4.5 41 L23 35 Z" fill="#F3F3F5"/>
+  <path d="M8.5 28.5 L23 35 L4.5 41 L3.8 39.6 L8.5 28.5 Z" fill="#16171B"/>
+  <path d="M8.50 28.50 L9.95 31.95 L11.40 29.80 Z" fill="#F3F3F5"/>
+  <path d="M11.40 29.80 L12.85 33.25 L14.30 31.10 Z" fill="#F3F3F5"/>
+  <path d="M14.30 31.10 L15.75 34.55 L17.20 32.40 Z" fill="#F3F3F5"/>
+  <path d="M17.20 32.40 L18.65 35.85 L20.10 33.70 Z" fill="#F3F3F5"/>
+  <path d="M20.10 33.70 L21.55 37.15 L23.00 35.00 Z" fill="#F3F3F5"/>
+  <path d="M4.50 41.00 L6.04 37.70 L7.58 40.00 Z" fill="#F3F3F5"/>
+  <path d="M7.58 40.00 L9.12 36.70 L10.67 39.00 Z" fill="#F3F3F5"/>
+  <path d="M10.67 39.00 L12.21 35.70 L13.75 38.00 Z" fill="#F3F3F5"/>
+  <path d="M13.75 38.00 L15.29 34.70 L16.83 37.00 Z" fill="#F3F3F5"/>
+  <path d="M16.83 37.00 L18.38 33.70 L19.92 36.00 Z" fill="#F3F3F5"/>
+  <path d="M19.92 36.00 L21.46 32.70 L23.00 35.00 Z" fill="#F3F3F5"/>
+  <path d="M27 21 Q22.5 31.5 27.5 44" fill="none" stroke="#16171B" stroke-width="2.2" stroke-linecap="round"/>
+  <circle cx="17.5" cy="22.5" r="3.1" fill="#3D7BFF"/>
+  <circle cx="18.2" cy="21.8" r="1" fill="#F3F3F5"/>
+  <path d="M12 16.4 L22.5 17.8" stroke="#16171B" stroke-width="2.4" stroke-linecap="round"/></svg><span>Fish Alive</span></h1>
   <button class="btn ghost small" id="installBtn" hidden>Install app</button>
 </div>
 <div id="installHelp" hidden>To install, tap <b>⋮</b> in Chrome, then <b>Add to home screen</b>.</div>
@@ -160,6 +179,24 @@ h1 small{display:none}
 <input type="file" id="file" accept="video/*,image/*" multiple hidden>
 
 <div id="emptyView" class="empty">
+  <svg class="hero-logo" width="84" height="84" viewBox="2 2 60 56" aria-hidden="true"><path d="M47 31 L60 19 Q56.5 32 60 45 Z" fill="#3D7BFF"/>
+  <path d="M8.5 28.5 C10 17 22 10 33.5 10.5 L38.5 3.5 L42 12.5 C46.5 15.5 49.8 21 50.6 27 L50.6 37 C47 46 38 52.5 27 52.5 C18 52.5 10.5 48.5 6.5 44 L4.5 41 L23 35 Z" fill="#F3F3F5"/>
+  <path d="M8.5 28.5 L23 35 L4.5 41 L3.8 39.6 L8.5 28.5 Z" fill="#16171B"/>
+  <path d="M8.50 28.50 L9.95 31.95 L11.40 29.80 Z" fill="#F3F3F5"/>
+  <path d="M11.40 29.80 L12.85 33.25 L14.30 31.10 Z" fill="#F3F3F5"/>
+  <path d="M14.30 31.10 L15.75 34.55 L17.20 32.40 Z" fill="#F3F3F5"/>
+  <path d="M17.20 32.40 L18.65 35.85 L20.10 33.70 Z" fill="#F3F3F5"/>
+  <path d="M20.10 33.70 L21.55 37.15 L23.00 35.00 Z" fill="#F3F3F5"/>
+  <path d="M4.50 41.00 L6.04 37.70 L7.58 40.00 Z" fill="#F3F3F5"/>
+  <path d="M7.58 40.00 L9.12 36.70 L10.67 39.00 Z" fill="#F3F3F5"/>
+  <path d="M10.67 39.00 L12.21 35.70 L13.75 38.00 Z" fill="#F3F3F5"/>
+  <path d="M13.75 38.00 L15.29 34.70 L16.83 37.00 Z" fill="#F3F3F5"/>
+  <path d="M16.83 37.00 L18.38 33.70 L19.92 36.00 Z" fill="#F3F3F5"/>
+  <path d="M19.92 36.00 L21.46 32.70 L23.00 35.00 Z" fill="#F3F3F5"/>
+  <path d="M27 21 Q22.5 31.5 27.5 44" fill="none" stroke="#16171B" stroke-width="2.2" stroke-linecap="round"/>
+  <circle cx="17.5" cy="22.5" r="3.1" fill="#3D7BFF"/>
+  <circle cx="18.2" cy="21.8" r="1" fill="#F3F3F5"/>
+  <path d="M12 16.4 L22.5 17.8" stroke="#16171B" stroke-width="2.4" stroke-linecap="round"/></svg>
   <div class="big">Turn your clips into a highlight reel</div>
   <p>Pick the moments you want. Each becomes a clip of exactly 1 to 5 seconds, with smooth pan and zoom.</p>
   <ol class="steps">
