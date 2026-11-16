@@ -59,6 +59,7 @@ button:disabled{opacity:.35;cursor:default}
 .clip .ops{display:flex}
 .clip .ops button{flex:1;background:none;padding:6px 0;font-size:13px;border-radius:0}
 .clip .ops button.x{color:var(--acc2)}
+.clip .frm{position:absolute;bottom:52px;right:4px;background:var(--acc);color:#111;font-size:11px;font-weight:700;border-radius:6px;padding:1px 5px}
 .clip .mot{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);font-size:12px;border-radius:6px;padding:2px 6px;color:var(--acc)}
 .noclips{color:var(--dim);font-size:13px;padding:10px 0}
 .seg{display:flex;background:var(--panel);border-radius:12px;padding:3px}
@@ -143,6 +144,18 @@ button:disabled{opacity:.35;cursor:default}
   <button class="btn primary" id="exportBtn">Export video</button>
 </div></div>
 
+<div class="modal" id="framer"><div class="sheet">
+  <div style="font-weight:700;margin-bottom:4px">Pinch to zoom · drag to move</div>
+  <div class="msg" style="margin-bottom:10px">This is exactly what will show in your video</div>
+  <canvas id="fcv" style="touch-action:none;cursor:grab;max-height:56vh"></canvas>
+  <div class="row" style="margin-top:12px;gap:6px">
+    <button class="btn ghost" id="fZoomOut" style="width:52px">−</button>
+    <button class="btn ghost" id="fReset">Reset</button>
+    <button class="btn ghost" id="fZoomIn" style="width:52px">＋</button>
+    <button class="btn ghost" id="fJump">Go to clip</button>
+    <button class="btn primary" id="fDone">Done</button>
+  </div>
+</div></div>
 <div class="modal" id="modal"><div class="sheet">
   <canvas id="cv"></canvas>
   <video id="outVideo" controls playsinline hidden></video>
@@ -153,6 +166,7 @@ button:disabled{opacity:.35;cursor:default}
 
 <video id="rv" playsinline preload="auto"></video>
 <video id="tv" playsinline preload="auto" muted></video>
+<video id="fv" playsinline preload="auto" muted style="position:fixed;width:2px;height:2px;opacity:.01;left:0;top:0;pointer-events:none"></video>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -396,7 +410,8 @@ pv.addEventListener('play', setPlayIcon); pv.addEventListener('pause', setPlayIc
 async function addClip(s, start, quiet) {
   const c = { id: ++uid, srcId: s.id, start, len: LEN, thumb: s.type === 'image' ? s.thumb : null, motion: randMotion() };
   clips.push(c); renderClips(); renderTrack(); renderSources();
-  if (!quiet) toast('Added clip ' + clips.length + (s.type === 'image' ? ' (photo)' : ' (' + fmt(start) + ')'));
+  if (!quiet && clips.length === 1) toast('Added! Tap the clip below to pinch & frame it');
+  else if (!quiet) toast('Added clip ' + clips.length + (s.type === 'image' ? ' (photo)' : ' (' + fmt(start) + ')'));
   requestAnimationFrame(() => { const el = $('clips'); el.scrollLeft = el.scrollWidth; });
   if (s.type !== 'image') { try { c.thumb = await grab(s.url, start + 0.2, 180); renderClips(); } catch (e) {} }
 }
@@ -404,12 +419,12 @@ $('addBtn').onclick = () => { if (cur && cur.type !== 'image' && cur.duration >=
 $('addImgBtn').onclick = () => { if (cur && cur.type === 'image') addClip(cur, 0); };
 function renderClips() {
   const el = $('clips'); el.innerHTML = '';
-  if (!clips.length) el.innerHTML = '<div class="noclips">No clips yet. Pick a moment above and tap “Add”.</div>';
+  if (!clips.length) el.innerHTML = '<div class="noclips">No clips yet. Pick a moment above and tap “Add”. Then tap a clip to pinch and frame it.</div>';
   clips.forEach((c, i) => {
     const s = sources.find(x => x.id === c.srcId);
     const d = document.createElement('div'); d.className = 'clip';
-    d.innerHTML = (c.thumb ? `<img src="${c.thumb}">` : `<div class="ph"></div>`) + `<div class="num">${i + 1}</div><button class="mot" data-a="m" title="Change motion">${MICON[c.motion] || '•'}</button><div class="t">${s ? s.name : ''} · ${c.len}s · ${s && s.type === 'image' ? 'photo' : fmt(c.start)}</div><div class="ops"><button data-a="l">◀</button><button data-a="x" class="x">✕</button><button data-a="r">▶</button></div>`;
-    d.querySelector('img,.ph').onclick = () => { if (s) selectSource(s, c.start).then(() => { if (s.type !== 'image') startLoop(); }); };
+    d.innerHTML = (c.thumb ? `<img src="${c.thumb}">` : `<div class="ph"></div>`) + `<div class="num">${i + 1}</div>${c.frame ? '<div class="frm">✥</div>' : ''}<button class="mot" data-a="m" title="Change motion">${MICON[c.motion] || '•'}</button><div class="t">${s ? s.name : ''} · ${c.len}s · ${s && s.type === 'image' ? 'photo' : fmt(c.start)}</div><div class="ops"><button data-a="l">◀</button><button data-a="x" class="x">✕</button><button data-a="r">▶</button></div>`;
+    d.querySelector('img,.ph').onclick = () => { if (s) openFramer(c, s); };
     d.querySelectorAll('button').forEach(b => b.onclick = () => {
       const a = b.dataset.a;
       if (a === 'm') { const order = [...MOTIONS, 'none']; c.motion = order[(order.indexOf(c.motion) + 1) % order.length]; toast('Motion: ' + c.motion.replace('-', ' ')); }
@@ -432,7 +447,7 @@ for (const [segId, key] of [['fmtSeg', 'fmt'], ['fitSeg', 'fit'], ['audSeg', 'au
 }
 
 // ---- rendering ----
-function drawFrame(ctx, v, W, H, motion, p) {
+function drawFrame(ctx, v, W, H, motion, p, frame) {
   const vw = v.videoWidth || v.width, vh = v.videoHeight || v.height; if (!vw) return;
   const m = opts.mot === 'on' ? motion : 'none';
   const t = Math.max(0, Math.min(1, p || 0));
@@ -442,6 +457,7 @@ function drawFrame(ctx, v, W, H, motion, p) {
   else if (m === 'up' || m === 'down') { z = Z; const r = (Z - 1) / 2 * H * 0.95; ty = m === 'up' ? r - 2 * r * t : -r + 2 * r * t; }
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   ctx.translate(W / 2 + tx, H / 2 + ty); ctx.scale(z, z); ctx.translate(-W / 2, -H / 2);
+  if (frame) { ctx.translate(W / 2 + frame.x * W, H / 2 + frame.y * H); ctx.scale(frame.z, frame.z); ctx.translate(-W / 2, -H / 2); }
   if (opts.fit === 'fill') {
     const s = Math.max(W / vw, H / vh), dw = vw * s, dh = vh * s;
     ctx.drawImage(v, (W - dw) / 2, (H - dh) / 2, dw, dh);
@@ -513,14 +529,14 @@ async function run(record) {
       const c = list[i], s = sources.find(x => x.id === c.srcId); if (!s) continue;
       $('msg').textContent = (record ? 'Building' : 'Previewing') + ' clip ' + (i + 1) + ' of ' + list.length + '…';
       if (s.type === 'image') {
-        drawFrame(ctx, s.img, W, H, c.motion, 0);
+        drawFrame(ctx, s.img, W, H, c.motion, 0, c.frame);
         if (rec) { if (rec.state === 'inactive') rec.start(250); else rec.resume(); }
         const t0 = performance.now();
         await new Promise(res => {
           const step = () => {
             if (abort) return res();
             const p = (performance.now() - t0) / (c.len * 1000);
-            drawFrame(ctx, s.img, W, H, c.motion, Math.min(1, p));
+            drawFrame(ctx, s.img, W, H, c.motion, Math.min(1, p), c.frame);
             $('progBar').style.width = ((i + Math.min(1, p)) / list.length * 100) + '%';
             if (p >= 1) return res();
             requestAnimationFrame(step);
@@ -532,7 +548,7 @@ async function run(record) {
       }
       rv.pause();
       await loadSrc(rv, s.url); await seek(rv, c.start);
-      drawFrame(ctx, rv, W, H, c.motion, 0);
+      drawFrame(ctx, rv, W, H, c.motion, 0, c.frame);
       if (rec) { if (rec.state === 'inactive') rec.start(250); else rec.resume(); }
       await rv.play();
       const end = Math.min(c.start + c.len, (s.duration || rv.duration) - 0.04);
@@ -544,7 +560,7 @@ async function run(record) {
         const step = () => {
           if (done) return;
           if (abort) return res();
-          drawFrame(ctx, rv, W, H, c.motion, (rv.currentTime - c.start) / c.len);
+          drawFrame(ctx, rv, W, H, c.motion, (rv.currentTime - c.start) / c.len, c.frame);
           if (rv.currentTime >= end || rv.ended) return res();
           $('progBar').style.width = ((i + (rv.currentTime - c.start) / c.len) / list.length * 100) + '%';
           (rv.requestVideoFrameCallback ? rv.requestVideoFrameCallback.bind(rv) : requestAnimationFrame)(step);
@@ -612,6 +628,73 @@ $('installBtn').onclick = async () => {
   else $('installHelp').hidden = !$('installHelp').hidden;
 };
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+// ---- framer: pinch / drag to reposition a clip inside the output frame ----
+let fClip = null, fSrc = null, fRun = 0;
+const fcv = $('fcv'), fv = $('fv');
+function frameLimits(z, el, W, H) {
+  const vw = el.videoWidth || el.width, vh = el.videoHeight || el.height;
+  if (!vw) return { x: 0, y: 0 };
+  const s = opts.fit === 'fill' ? Math.max(W / vw, H / vh) : Math.min(W / vw, H / vh);
+  return { x: Math.abs(vw * s * z - W) / 2 / W, y: Math.abs(vh * s * z - H) / 2 / H };
+}
+function clampFrame(f, el, W, H) {
+  f.z = Math.max(1, Math.min(4, f.z));
+  const L = frameLimits(f.z, el, W, H);
+  f.x = Math.max(-L.x, Math.min(L.x, f.x)); f.y = Math.max(-L.y, Math.min(L.y, f.y));
+  return f;
+}
+async function openFramer(c, s) {
+  fClip = c; fSrc = s; const run = ++fRun;
+  if (!c.frame) c.frame = { z: 1, x: 0, y: 0 };
+  const [W, H] = SIZES[opts.fmt];
+  const scale = Math.min(1, 900 / Math.max(W, H)); fcv.width = Math.round(W * scale); fcv.height = Math.round(H * scale);
+  $('framer').classList.add('on');
+  $('fJump').hidden = s.type === 'image';
+  const ctx = fcv.getContext('2d');
+  const el = s.type === 'image' ? s.img : fv;
+  if (s.type !== 'image') {
+    try { await loadSrc(fv, s.url); await seek(fv, c.start); fv.play().catch(() => {}); } catch (e) {}
+  }
+  (function loop() {
+    if (run !== fRun) return;
+    if (s.type !== 'image' && !fv.paused && fv.currentTime >= c.start + c.len) fv.currentTime = c.start;
+    drawFrame(ctx, el, fcv.width, fcv.height, 'none', 0, c.frame);
+    requestAnimationFrame(loop);
+  })();
+}
+function closeFramer() {
+  fRun++; fv.pause(); $('framer').classList.remove('on');
+  if (fClip && fClip.frame && fClip.frame.z === 1 && !fClip.frame.x && !fClip.frame.y) fClip.frame = null;
+  renderClips();
+}
+$('fDone').onclick = closeFramer;
+$('framer').addEventListener('click', e => { if (e.target.id === 'framer') closeFramer(); });
+$('fReset').onclick = () => { if (fClip) fClip.frame = { z: 1, x: 0, y: 0 }; };
+const fEl = () => fSrc.type === 'image' ? fSrc.img : fv;
+function zoomBy(k) { if (!fClip) return; const f = fClip.frame; f.z *= k; clampFrame(f, fEl(), fcv.width, fcv.height); }
+$('fZoomIn').onclick = () => zoomBy(1.2); $('fZoomOut').onclick = () => zoomBy(1 / 1.2);
+$('fJump').onclick = () => { const c = fClip, s = fSrc; closeFramer(); selectSource(s, c.start).then(startLoop); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+const ptrs = new Map(); let gStart = null;
+function gesture() {
+  const pts = [...ptrs.values()];
+  const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length, cy = pts.reduce((a, p) => a + p.y, 0) / pts.length;
+  const d = pts.length > 1 ? Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) : 0;
+  return { cx, cy, d, n: pts.length };
+}
+fcv.addEventListener('pointerdown', e => { fcv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); gStart = { g: gesture(), f: { ...fClip.frame } }; });
+fcv.addEventListener('pointermove', e => {
+  if (!ptrs.has(e.pointerId) || !fClip || !gStart) return;
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  const g = gesture(); if (g.n !== gStart.g.n) { gStart = { g, f: { ...fClip.frame } }; return; }
+  const r = fcv.getBoundingClientRect(), f0 = gStart.f;
+  const f = { z: f0.z, x: f0.x + (g.cx - gStart.g.cx) / r.width, y: f0.y + (g.cy - gStart.g.cy) / r.height };
+  if (g.n > 1 && gStart.g.d > 0) f.z = f0.z * g.d / gStart.g.d;
+  fClip.frame = clampFrame(f, fEl(), fcv.width, fcv.height);
+});
+const ptrUp = e => { ptrs.delete(e.pointerId); gStart = ptrs.size ? { g: gesture(), f: { ...fClip.frame } } : null; };
+fcv.addEventListener('pointerup', ptrUp); fcv.addEventListener('pointercancel', ptrUp);
+fcv.addEventListener('wheel', e => { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.1 : 1 / 1.1); }, { passive: false });
+
 $('lenSeg').querySelectorAll('button').forEach(b => b.onclick = () => {
   $('lenSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
   LEN = +b.dataset.v; if (cur && cur.type !== 'image') { selStart = clamp(selStart); renderTrack(); if (looping) startLoop(); }
