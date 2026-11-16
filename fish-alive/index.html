@@ -5,110 +5,165 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Fish Alive</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0d0d0f">
+<meta name="theme-color" content="#CFE6E8">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0d0d0f;--panel:#17171b;--line:#2a2a31;--txt:#f3f3f5;--dim:#8d8d98;--acc:#d7ff3a;--acc2:#ff4f7b}
+:root{
+  --sea:#CFE6E8;      /* page: sea glass */
+  --foam:#F6FBFB;     /* surfaces */
+  --ink:#0F2E44;      /* text, stage frame */
+  --tide:#557685;     /* secondary text */
+  --line:#AECFD4;     /* hairlines */
+  --bob:#E8432E;      /* bobber red: the one accent */
+  --bob-d:#C7321F;
+}
 [hidden]{display:none!important}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,sans-serif}
-body{padding:14px 14px 120px;max-width:720px;margin:0 auto}
-h1{font-family:'Archivo Black',sans-serif;font-size:26px;margin:4px 0 2px;letter-spacing:-.5px}
-h1 span{color:var(--acc)}
-.sub{color:var(--dim);font-size:13px;margin-bottom:14px}
-button{font:inherit;border:0;border-radius:12px;cursor:pointer;color:var(--txt);background:var(--panel)}
+html,body{margin:0;background:var(--sea);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:16px;line-height:1.4}
+body{padding:14px 16px 128px;max-width:640px;margin:0 auto}
+button{font:inherit;border:0;cursor:pointer;color:inherit;background:none}
 button:disabled{opacity:.35;cursor:default}
-.btn{padding:12px 16px;font-weight:700}
-.primary{background:var(--acc);color:#111}
-.ghost{background:transparent;border:1px solid var(--line)}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .row{display:flex;gap:8px;align-items:center}
-.empty{border:2px dashed var(--line);border-radius:18px;padding:40px 20px;text-align:center}
-.empty .big{font-family:'Archivo Black';font-size:20px;margin-bottom:6px}
-.empty p{color:var(--dim);font-size:14px;margin:0 0 18px}
-.label{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);margin:18px 0 8px;display:flex;justify-content:space-between;align-items:center}
-.sources{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
-.src{flex:0 0 auto;width:74px;cursor:pointer;position:relative}
-.src img,.src .ph{width:74px;height:74px;object-fit:cover;border-radius:10px;border:2px solid transparent;display:block;background:#222}
-.src.on img,.src.on .ph{border-color:var(--acc)}
-.src .n{font-size:10px;color:var(--dim);margin-top:3px;text-align:center}
-.src .cnt{position:absolute;top:4px;right:4px;background:var(--acc);color:#111;font-size:11px;font-weight:700;border-radius:9px;padding:1px 6px}
-.addsrc{flex:0 0 auto;width:74px;height:74px;border-radius:10px;border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--dim);cursor:pointer;background:none}
-.stage{background:#000;border-radius:16px;overflow:hidden;position:relative;aspect-ratio:9/16;margin:0 auto;display:flex;align-items:center;justify-content:center}
+
+/* header */
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:6px 0 2px}
+h1{margin:0;font-weight:800;font-size:40px;line-height:.9;letter-spacing:-1.5px;font-stretch:75%;font-variation-settings:'wdth' 75}
+h1 small{display:block;font-size:15px;letter-spacing:0;font-weight:500;color:var(--tide);margin-top:8px;font-stretch:100%;font-variation-settings:'wdth' 100}
+.btn{padding:13px 18px;font-weight:700;border-radius:999px}
+.primary{background:var(--bob);color:#fff}
+.primary:active{background:var(--bob-d)}
+.ghost{border:2px solid var(--ink)}
+.small{padding:7px 12px;font-size:13px;border-width:1.5px;white-space:nowrap}
+#installHelp{background:var(--foam);border-radius:14px;padding:10px 12px;font-size:14px;margin:10px 0 0}
+
+/* section headings: sentence case, quiet */
+.label{display:flex;justify-content:space-between;align-items:baseline;margin:22px 0 8px;font-weight:700;font-size:17px}
+.label .meta{font-weight:500;font-size:14px;color:var(--tide)}
+
+/* empty */
+.empty{margin-top:28px;background:var(--foam);border-radius:28px;padding:36px 22px 28px;text-align:center}
+.empty .big{font-weight:800;font-size:28px;line-height:1.05;letter-spacing:-.5px;margin-bottom:10px}
+.empty p{color:var(--tide);margin:0 auto 22px;max-width:30ch}
+.empty .nums{display:flex;justify-content:center;gap:8px;margin-bottom:22px}
+.empty .nums span{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--sea)}
+.empty .nums span:last-child{background:var(--bob);color:#fff}
+
+/* media row */
+.sources{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none}
+.src{flex:0 0 auto;width:72px;cursor:pointer;position:relative}
+.src img,.src .ph{width:72px;height:72px;object-fit:cover;border-radius:16px;display:block;background:var(--line);outline:3px solid transparent;outline-offset:2px}
+.src.on img,.src.on .ph{outline-color:var(--ink)}
+.src .n{font-size:12px;color:var(--tide);margin-top:5px;text-align:center;font-variant-numeric:tabular-nums}
+.src .cnt{position:absolute;top:-4px;right:-4px;background:var(--bob);color:#fff;font-size:12px;font-weight:800;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;padding:0 6px;border:2px solid var(--sea)}
+.addsrc{flex:0 0 auto;width:72px;height:72px;border-radius:16px;border:2px dashed var(--tide);font-size:28px;color:var(--tide)}
+
+/* stage */
+#srcName{font-size:13px;color:var(--tide);margin:14px 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stagewrap{background:var(--ink);border-radius:24px;padding:10px}
+.stage{background:#000;border-radius:16px;overflow:hidden;position:relative;aspect-ratio:9/16;margin:0 auto}
 #scv{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
-.chip{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.6);font-size:12px;font-weight:700;padding:6px 10px;border-radius:9px}
-.pinchHint{position:absolute;left:50%;bottom:62px;transform:translateX(-50%);background:rgba(0,0,0,.6);font-size:12px;padding:6px 10px;border-radius:9px;pointer-events:none;white-space:nowrap;transition:opacity .4s}
-.playbtn{position:absolute;left:10px;bottom:10px;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.55);font-size:18px}
-.tc{position:absolute;right:10px;bottom:12px;background:rgba(0,0,0,.55);padding:5px 9px;border-radius:8px;font-size:12px;font-variant-numeric:tabular-nums}
-.track{position:relative;height:62px;margin-top:10px;border-radius:10px;overflow:hidden;background:#222;touch-action:none;cursor:pointer;user-select:none}
+.chip{position:absolute;top:10px;right:10px;background:var(--foam);color:var(--ink);font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px}
+.pinchHint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(15,46,68,.75);color:#fff;font-size:13px;padding:6px 12px;border-radius:999px;pointer-events:none;white-space:nowrap;transition:opacity .4s}
+#scrubImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--ink)}
+#scrubLbl{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:var(--bob);color:#fff;font-weight:800;padding:6px 12px;border-radius:999px;font-size:14px;font-variant-numeric:tabular-nums}
+.playbtn{position:absolute;left:10px;bottom:10px;width:46px;height:46px;border-radius:50%;background:var(--foam);color:var(--ink);font-size:16px}
+.tc{position:absolute;right:10px;bottom:16px;color:#fff;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+
+/* timeline */
+.track{position:relative;height:58px;margin-top:10px;border-radius:12px;overflow:hidden;background:#2a4a60;touch-action:none;cursor:pointer;user-select:none}
 .strip{position:absolute;inset:0;display:flex}
-.strip img{flex:1;min-width:0;height:100%;object-fit:cover;opacity:.55}
-.mark{position:absolute;top:0;bottom:0;background:rgba(255,79,123,.35);border-left:2px solid var(--acc2)}
-.win{position:absolute;top:0;bottom:0;border:3px solid var(--acc);border-radius:6px;background:rgba(215,255,58,.12);box-shadow:0 0 0 999px rgba(0,0,0,.25)}
-.win:after{content:attr(data-len);position:absolute;top:2px;left:4px;font-size:11px;font-weight:700;color:var(--acc)}
+.strip img{flex:1;min-width:0;height:100%;object-fit:cover;opacity:.6}
+.mark{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.45) 0 4px,transparent 4px 9px)}
+.win{position:absolute;top:0;bottom:0;border:3px solid var(--bob);border-radius:10px;background:rgba(232,67,46,.12);box-shadow:0 0 0 999px rgba(15,46,68,.35)}
+.win:after{content:attr(data-len);position:absolute;top:3px;left:5px;font-size:12px;font-weight:800;color:#fff;background:var(--bob);border-radius:999px;padding:0 6px}
 .head{position:absolute;top:0;bottom:0;width:2px;background:#fff;pointer-events:none}
-.hint{font-size:12px;color:var(--dim);margin-top:6px;text-align:center}
-.controls{display:flex;gap:8px;margin-top:10px}
-.controls .nudge{width:58px;padding:12px 0;font-weight:700}
-.controls .add{flex:1}
-.clips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;min-height:40px}
-.clip{flex:0 0 auto;width:92px;background:var(--panel);border-radius:10px;overflow:hidden;position:relative}
-.clip img,.clip .ph{width:92px;height:92px;object-fit:cover;display:block;background:#222}
-.clip .num{position:absolute;top:4px;left:4px;background:rgba(0,0,0,.7);font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px}
-.clip .t{font-size:10px;color:var(--dim);padding:3px 5px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hint{font-size:13px;color:var(--tide);margin-top:6px;text-align:center}
+
+/* controls */
+.controls{display:flex;gap:8px;margin-top:12px}
+.nudge{width:64px;border-radius:999px;border:2px solid var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+.add{flex:1;font-size:17px;padding:15px}
+
+/* length picker: the rhyme */
+.lens{display:flex;justify-content:space-between;gap:6px}
+.lens button{flex:1;aspect-ratio:1;max-width:64px;border-radius:50%;background:var(--foam);font-weight:800;font-size:26px;font-stretch:75%;font-variation-settings:'wdth' 75;color:var(--ink);position:relative;transition:transform .15s}
+.lens button small{position:absolute;bottom:8px;left:0;right:0;font-size:11px;font-weight:600;color:var(--tide);font-stretch:100%}
+.lens button.on{background:var(--bob);color:#fff;transform:translateY(-3px)}
+.lens button.on small{color:rgba(255,255,255,.8)}
+
+/* clips */
+.clips{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 8px;min-height:40px;scrollbar-width:none}
+.clip{flex:0 0 auto;width:104px;background:var(--foam);border-radius:18px;overflow:hidden;position:relative}
+.clip img,.clip .ph{width:104px;height:104px;object-fit:cover;display:block;background:var(--line);cursor:pointer}
+.clip .num{position:absolute;top:6px;left:6px;background:var(--ink);color:#fff;font-size:12px;font-weight:800;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;padding:0 6px}
+.clip .frm{position:absolute;top:80px;left:6px;background:var(--foam);color:var(--ink);font-size:12px;font-weight:800;border-radius:999px;padding:1px 7px}
+.clip .mot{position:absolute;top:6px;right:6px;background:var(--foam);color:var(--ink);font-size:13px;font-weight:800;border-radius:999px;width:26px;height:26px}
+.clip .t{font-size:12px;color:var(--tide);padding:5px 8px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
 .clip .ops{display:flex}
-.clip .ops button{flex:1;background:none;padding:6px 0;font-size:13px;border-radius:0}
-.clip .ops button.x{color:var(--acc2)}
-.clip .frm{position:absolute;bottom:52px;right:4px;background:var(--acc);color:#111;font-size:11px;font-weight:700;border-radius:6px;padding:1px 5px}
-.clip .mot{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);font-size:12px;border-radius:6px;padding:2px 6px;color:var(--acc)}
-.noclips{color:var(--dim);font-size:13px;padding:10px 0}
-.seg{display:flex;background:var(--panel);border-radius:12px;padding:3px}
-.seg button{flex:1;background:none;padding:9px 0;font-size:13px;font-weight:600;color:var(--dim);border-radius:9px}
-.seg button.on{background:#2c2c34;color:var(--txt)}
+.clip .ops button{flex:1;padding:8px 0;font-size:14px;font-weight:700}
+.clip .ops button.x{color:var(--bob)}
+.noclips{color:var(--tide);font-size:14px;padding:8px 0;max-width:40ch}
+
+/* settings */
 .settings{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.bar{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:24px 14px 16px}
-.bar .in{max-width:720px;margin:0 auto;display:flex;gap:8px}
-.bar .primary{flex:1;font-size:16px;padding:15px}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
+.seg{display:flex;background:var(--foam);border-radius:999px;padding:4px}
+.seg button{flex:1;padding:9px 0;font-size:14px;font-weight:600;color:var(--tide);border-radius:999px}
+.seg button.on{background:var(--ink);color:#fff}
+
+/* bottom bar */
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--sea);border-top:1.5px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+.bar .in{max-width:640px;margin:0 auto;display:flex;gap:8px}
+.bar .primary{flex:1;font-size:17px}
+
+/* sheets */
+.modal{position:fixed;inset:0;background:rgba(15,46,68,.82);display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
 .modal.on{display:flex}
-.sheet{background:var(--panel);border-radius:18px;padding:16px;width:100%;max-width:440px;max-height:96vh;overflow:auto;text-align:center}
-.sheet canvas,.sheet video{max-width:100%;max-height:58vh;border-radius:10px;background:#000;display:block;margin:0 auto}
-.prog{height:6px;background:#2a2a31;border-radius:3px;margin:14px 0 8px;overflow:hidden}
-.prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
-.msg{font-size:13px;color:var(--dim);min-height:18px}
-.sheet .row{justify-content:center;margin-top:12px;flex-wrap:wrap}
-.toast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:#fff;color:#111;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:20;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw}
-.toast.on{opacity:1}
-#rv,#tv{position:fixed;width:2px;height:2px;opacity:.01;left:0;top:0;pointer-events:none}
+.sheet{background:var(--foam);border-radius:28px;padding:18px;width:100%;max-width:440px;max-height:96vh;overflow:auto;text-align:center}
+.sheet h2{margin:0 0 2px;font-size:20px;font-weight:800}
+.sheet canvas,.sheet video{max-width:100%;max-height:56vh;border-radius:16px;background:var(--ink);display:block;margin:0 auto}
+.prog{height:8px;background:var(--line);border-radius:999px;margin:16px 0 8px;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--bob);transition:width .2s}
+.msg{font-size:14px;color:var(--tide);min-height:20px}
+.sheet .row{justify-content:center;margin-top:14px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;top:14px;transform:translateX(-50%) translateY(-8px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;z-index:20;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%)}
+#rv,#tv,#pv,#fv{position:fixed;width:2px;height:2px;opacity:.01;left:0;top:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<div class="row" style="justify-content:space-between"><h1>Fish <span>Alive</span> 🐟</h1><button class="btn ghost" id="installBtn" hidden style="padding:8px 12px;font-size:13px">⬇ Install app</button></div>
-<div id="installHelp" hidden style="background:var(--panel);border-radius:12px;padding:10px 12px;font-size:13px;margin:8px 0;color:var(--dim)">To install: tap <b style="color:var(--txt)">⋮</b> in Chrome, then <b style="color:var(--txt)">Add to home screen</b> or <b style="color:var(--txt)">Install app</b>.</div>
-<div class="sub">Tap the moments you want. 1, 2, 3, 4, 5… every clip comes out exactly the length you choose.</div>
+<div class="top">
+  <h1>Fish Alive<small>1, 2, 3, 4, 5. Catch the moments you want.</small></h1>
+  <button class="btn ghost small" id="installBtn" hidden>Install app</button>
+</div>
+<div id="installHelp" hidden>To install, tap <b>⋮</b> in Chrome, then <b>Add to home screen</b>.</div>
 
 <input type="file" id="file" accept="video/*,image/*" multiple hidden>
 
 <div id="emptyView" class="empty">
-  <div class="big">Dump your videos &amp; photos in</div>
-  <p>Pick as many as you like. Nothing gets uploaded; it all stays on your phone.</p>
-  <button class="btn primary" id="pickBtn">Add videos &amp; photos</button>
+  <div class="nums"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+  <div class="big">Throw in your videos and photos</div>
+  <p>Add as many as you like. Nothing is uploaded; everything stays on your phone.</p>
+  <button class="btn primary" id="pickBtn">Add videos and photos</button>
 </div>
 
 <div id="editView" hidden>
-  <div class="label"><span>Your media</span></div>
+  <div class="label">Your media</div>
   <div class="sources" id="sources"></div>
 
-  <div class="label"><span id="srcName">—</span></div>
+  <div id="srcName">—</div>
+  <div class="stagewrap">
   <div class="stage">
     <canvas id="scv"></canvas>
     <button class="chip" id="frameReset" hidden>Reset frame</button>
-    <div class="pinchHint" id="pinchHint">✋ Pinch &amp; drag the picture to frame it</div>
-    <img id="scrubImg" hidden style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000">
-    <div id="scrubLbl" hidden style="position:absolute;top:10px;left:50%;transform:translateX(-50%);background:var(--acc);color:#111;font-weight:700;padding:6px 12px;border-radius:10px;font-size:14px"></div>
-    <button class="playbtn" id="playBtn">▶</button>
+    <div class="pinchHint" id="pinchHint">Pinch and drag to frame</div>
+    <img id="scrubImg" hidden alt="">
+    <div id="scrubLbl" hidden></div>
+    <button class="playbtn" id="playBtn" aria-label="Play">▶</button>
     <div class="tc" id="tc">0:00.0</div>
   </div>
   <div id="vidOnly">
@@ -118,27 +173,29 @@ button:disabled{opacity:.35;cursor:default}
     <div class="win" id="win" data-len="3s"></div>
     <div class="head" id="head"></div>
   </div>
+  </div>
+  </div>
   <div class="hint" id="hint"></div>
-  <div class="controls">
-    <button class="nudge" id="back">−0.5</button>
-    <button class="btn primary add" id="addBtn">＋ Add 3s</button>
-    <button class="nudge" id="fwd">+0.5</button>
+  <div class="controls" id="vidControls">
+    <button class="nudge" id="back" aria-label="Back half a second">−0.5</button>
+    <button class="btn primary add" id="addBtn">Catch 3s</button>
+    <button class="nudge" id="fwd" aria-label="Forward half a second">+0.5</button>
   </div>
-  </div>
-  <div class="controls" id="imgOnly" hidden><button class="btn primary add" id="addImgBtn">＋ Add this photo again</button></div>
-  <div class="label" style="margin-top:12px"><span>Clip length</span></div>
-  <div class="seg" id="lenSeg"><button data-v="1">1s</button><button data-v="2">2s</button><button data-v="3" class="on">3s</button><button data-v="4">4s</button><button data-v="5">5s</button></div>
+  <div class="controls" id="imgOnly" hidden><button class="btn primary add" id="addImgBtn">Catch this photo again</button></div>
 
-  <div class="label"><span>Your edit</span><span id="total">0 clips · 0s</span></div>
+  <div class="label">Clip length</div>
+  <div class="lens" id="lenSeg"><button data-v="1">1<small>sec</small></button><button data-v="2">2<small>sec</small></button><button data-v="3" class="on">3<small>sec</small></button><button data-v="4">4<small>sec</small></button><button data-v="5">5<small>sec</small></button></div>
+
+  <div class="label">Your catch <span class="meta" id="total">0 clips, 0s</span></div>
   <div class="clips" id="clips"></div>
 
-  <div class="label"><span>Settings</span></div>
+  <div class="label">Settings</div>
   <div class="settings">
     <div class="seg" id="fmtSeg"><button data-v="9:16" class="on">9:16</button><button data-v="1:1">1:1</button><button data-v="16:9">16:9</button></div>
     <div class="seg" id="fitSeg"><button data-v="fill" class="on">Fill</button><button data-v="fit">Fit</button></div>
     <div class="seg" id="audSeg"><button data-v="on" class="on">Sound on</button><button data-v="off">Muted</button></div>
     <div class="seg" id="ordSeg"><button data-v="keep" class="on">My order</button><button data-v="shuffle">Shuffle</button></div>
-    <div class="seg" id="motSeg" style="grid-column:1/-1"><button data-v="on" class="on">Slow pan &amp; zoom</button><button data-v="off">No motion</button></div>
+    <div class="seg" id="motSeg" style="grid-column:1/-1"><button data-v="on" class="on">Slow pan and zoom</button><button data-v="off">No motion</button></div>
   </div>
 </div>
 
@@ -148,14 +205,14 @@ button:disabled{opacity:.35;cursor:default}
 </div></div>
 
 <div class="modal" id="framer"><div class="sheet">
-  <div style="font-weight:700;margin-bottom:4px">Pinch to zoom · drag to move</div>
-  <div class="msg" style="margin-bottom:10px">This is exactly what will show in your video</div>
-  <canvas id="fcv" style="touch-action:none;cursor:grab;max-height:56vh"></canvas>
-  <div class="row" style="margin-top:12px;gap:6px">
-    <button class="btn ghost" id="fZoomOut" style="width:52px">−</button>
-    <button class="btn ghost" id="fReset">Reset</button>
-    <button class="btn ghost" id="fZoomIn" style="width:52px">＋</button>
-    <button class="btn ghost" id="fJump">Go to clip</button>
+  <h2>Frame this clip</h2>
+  <div class="msg" style="margin-bottom:12px">Pinch to zoom, drag to move. This is exactly what your video shows.</div>
+  <canvas id="fcv" style="touch-action:none;cursor:grab"></canvas>
+  <div class="row" style="margin-top:14px;gap:6px">
+    <button class="btn ghost small" id="fZoomOut" aria-label="Zoom out">−</button>
+    <button class="btn ghost small" id="fReset">Reset</button>
+    <button class="btn ghost small" id="fZoomIn" aria-label="Zoom in">+</button>
+    <button class="btn ghost small" id="fJump">Go to clip</button>
     <button class="btn primary" id="fDone">Done</button>
   </div>
 </div></div>
@@ -169,11 +226,14 @@ button:disabled{opacity:.35;cursor:default}
 
 <video id="rv" playsinline preload="auto"></video>
 <video id="tv" playsinline preload="auto" muted></video>
-<video id="pv" playsinline preload="auto" muted style="position:fixed;width:2px;height:2px;opacity:.01;left:0;top:0;pointer-events:none"></video>
-<video id="fv" playsinline preload="auto" muted style="position:fixed;width:2px;height:2px;opacity:.01;left:0;top:0;pointer-events:none"></video>
-<div class="toast" id="toast"></div>
+<video id="pv" playsinline preload="auto" muted></video>
+<video id="fv" playsinline preload="auto" muted></video>
+<div class="toast" id="toast" role="status"></div>
 
 <script>
+window.addEventListener('error', e => { try { toast('Something went wrong. Your clips are still here, so try again.'); } catch (x) {} });
+window.addEventListener('unhandledrejection', e => { console.warn(e.reason); });
+let stageDirty = true;
 let LEN = 3; // length for new clips (1–5s); each clip keeps its own length in c.len
 const $ = id => document.getElementById(id);
 const pv = $('pv'), rv = $('rv'), tv = $('tv'), cv = $('cv');
@@ -225,7 +285,14 @@ async function seek(v, t) {
 
 // ---- frame grabbing (queued on hidden thumb video) ----
 let q = Promise.resolve();
-function queue(fn) { const p = q.then(fn); q = p.catch(() => {}); return p; }
+function unload(v) { try { v.pause(); v.removeAttribute('src'); v.dataset.url = ''; v.load(); } catch (e) {} }
+let qPending = 0, qIdle;
+function queue(fn) {
+  qPending++; clearTimeout(qIdle);
+  const p = q.then(fn);
+  q = p.catch(() => {}).then(() => { if (--qPending === 0) qIdle = setTimeout(() => unload(tv), 1500); });
+  return p;
+}
 function grab(url, t, w = 160) {
   return queue(async () => {
     await loadSrc(tv, url); await seek(tv, t);
@@ -278,7 +345,7 @@ $('file').onchange = async e => {
 
 async function loadImage(s) {
   const img = new Image(); img.src = s.url; await img.decode();
-  const k = Math.min(1, 2048 / Math.max(img.naturalWidth, img.naturalHeight));
+  const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
   const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
   c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
   s.img = c; s.duration = 5;
@@ -308,8 +375,8 @@ async function selectSource(s, start = 0) {
   renderSources();
   $('srcName').textContent = s.name;
   const isImg = s.type === 'image';
-  $('vidOnly').hidden = isImg; $('playBtn').hidden = isImg; $('tc').hidden = isImg;
-  $('imgOnly').hidden = !isImg; updateFrameReset();
+  $('vidOnly').hidden = isImg; $('vidControls').hidden = isImg; $('hint').hidden = isImg; $('playBtn').hidden = isImg; $('tc').hidden = isImg;
+  $('imgOnly').hidden = !isImg; updateFrameReset(); stageDirty = true;
   if (isImg) return;
   pv.src = s.url;
   try { await once(pv, 'loadedmetadata', 15000); } catch (e) { return; }
@@ -319,10 +386,11 @@ async function selectSource(s, start = 0) {
   pv.currentTime = selStart;
   renderTrack();
   if (!s.strip && s.duration) {
-    const N = 16, out = new Array(N).fill(null); s.strip = out;
+    const N = 12, out = new Array(N).fill(null); s.strip = out;
     // coarse pass first (every 4th frame), then fill in, so the strip appears quickly
     const order = []; for (let k = 0; k < 4; k++) for (let i = k * 0 + (k === 0 ? 0 : [2, 1, 3][k - 1]); i < N; i += 4) order.push(i);
     for (const i of order) {
+      if (cur !== s) { s.strip = null; break; } // switched away: free the decoder, redo later
       try { out[i] = await grab(s.url, (i + 0.5) * s.duration / N, 200); } catch (e) {}
       if (cur === s) renderStrip();
     }
@@ -348,7 +416,7 @@ function renderTrack() {
   $('win').style.width = (LEN / d * 100) + '%';
   $('addBtn').disabled = short || !cur.duration;
   $('win').dataset.len = LEN + 's';
-  $('addBtn').textContent = short ? 'Too short (under ' + LEN + 's)' : '＋ Add ' + LEN + 's at ' + fmt(selStart);
+  $('addBtn').textContent = short ? 'Too short (under ' + LEN + 's)' : 'Catch ' + LEN + 's at ' + fmt(selStart);
   $('hint').textContent = short ? 'This video is under ' + LEN + ' seconds, so pick a shorter clip length' : 'Tap or drag the timeline to pick where your ' + LEN + ' seconds start';
 }
 function tFromX(x) { const r = $('track').getBoundingClientRect(); return Math.max(0, Math.min(1, (x - r.left) / r.width)) * (cur.duration || 0); }
@@ -404,15 +472,21 @@ pv.addEventListener('play', setPlayIcon); pv.addEventListener('pause', setPlayIc
 const scv = $('scv'), sctx = scv.getContext('2d');
 function setStageShape() {
   const [W, H] = SIZES[opts.fmt], st = document.querySelector('.stage');
-  st.style.aspectRatio = W + ' / ' + H; st.style.width = `min(100%, calc(44vh * ${W / H}))`;
-  scv.width = Math.round(W * 0.6); scv.height = Math.round(H * 0.6);
+  st.style.aspectRatio = W + ' / ' + H; st.style.width = `min(100%, calc(40vh * ${W / H}))`;
+  scv.width = Math.round(W * 0.6); scv.height = Math.round(H * 0.6); stageDirty = true;
 }
 setStageShape();
+const markStage = () => { stageDirty = true; };
+['seeked', 'loadeddata', 'timeupdate'].forEach(ev => pv.addEventListener(ev, markStage));
+scv.addEventListener('pointermove', markStage); scv.addEventListener('wheel', markStage, { passive: true });
 const stageEl = () => cur && cur.type === 'image' ? cur.img : pv;
 (function tick() {
   if (cur && !$('editView').hidden) {
+    // only redraw when something changed or the video is playing (saves battery and memory)
     const el = stageEl();
-    if (el && (cur.type === 'image' || pv.readyState >= 2)) drawFrame(sctx, el, scv.width, scv.height, 'none', 0, cur.frame);
+    if ((stageDirty || (cur.type !== 'image' && !pv.paused)) && el && (cur.type === 'image' || pv.readyState >= 2)) {
+      drawFrame(sctx, el, scv.width, scv.height, 'none', 0, cur.frame); stageDirty = false;
+    }
   }
   if (cur && cur.duration && cur.type !== 'image') {
     if (looping && !pv.paused && pv.currentTime >= selStart + LEN) pv.currentTime = selStart;
@@ -426,8 +500,8 @@ const stageEl = () => cur && cur.type === 'image' ? cur.img : pv;
 async function addClip(s, start, quiet) {
   const c = { id: ++uid, srcId: s.id, start, len: LEN, frame: s.frame ? { ...s.frame } : null, thumb: s.type === 'image' ? s.thumb : null, motion: randMotion() };
   clips.push(c); renderClips(); renderTrack(); renderSources();
-  if (!quiet && clips.length === 1) toast('Added! Tap the clip below to pinch & frame it');
-  else if (!quiet) toast('Added clip ' + clips.length + (s.type === 'image' ? ' (photo)' : ' (' + fmt(start) + ')'));
+  if (!quiet && clips.length === 1) toast('Caught! Tap the clip below to frame it');
+  else if (!quiet) toast('Caught clip ' + clips.length + (s.type === 'image' ? ' (photo)' : ' (' + fmt(start) + ')'));
   requestAnimationFrame(() => { const el = $('clips'); el.scrollLeft = el.scrollWidth; });
   if (s.type !== 'image') { try { c.thumb = await grab(s.url, start + 0.2, 180); renderClips(); } catch (e) {} }
 }
@@ -435,11 +509,11 @@ $('addBtn').onclick = () => { if (cur && cur.type !== 'image' && cur.duration >=
 $('addImgBtn').onclick = () => { if (cur && cur.type === 'image') addClip(cur, 0); };
 function renderClips() {
   const el = $('clips'); el.innerHTML = '';
-  if (!clips.length) el.innerHTML = '<div class="noclips">No clips yet. Pick a moment above and tap “Add”. Then tap a clip to pinch and frame it.</div>';
+  if (!clips.length) el.innerHTML = '<div class="noclips">Nothing caught yet. Pick a moment above and tap Catch.</div>';
   clips.forEach((c, i) => {
     const s = sources.find(x => x.id === c.srcId);
     const d = document.createElement('div'); d.className = 'clip';
-    d.innerHTML = (c.thumb ? `<img src="${c.thumb}">` : `<div class="ph"></div>`) + `<div class="num">${i + 1}</div>${c.frame ? '<div class="frm">✥</div>' : ''}<button class="mot" data-a="m" title="Change motion">${MICON[c.motion] || '•'}</button><div class="t">${s ? s.name : ''} · ${c.len}s · ${s && s.type === 'image' ? 'photo' : fmt(c.start)}</div><div class="ops"><button data-a="l">◀</button><button data-a="x" class="x">✕</button><button data-a="r">▶</button></div>`;
+    d.innerHTML = (c.thumb ? `<img src="${c.thumb}">` : `<div class="ph"></div>`) + `<div class="num">${i + 1}</div>${c.frame ? '<div class="frm">✥</div>' : ''}<button class="mot" data-a="m" title="Change motion">${MICON[c.motion] || '•'}</button><div class="t">${c.len}s, ${s && s.type === 'image' ? 'photo' : 'from ' + fmt(c.start)}</div><div class="ops"><button data-a="l">◀</button><button data-a="x" class="x">✕</button><button data-a="r">▶</button></div>`;
     d.querySelector('img,.ph').onclick = () => { if (s) openFramer(c, s); };
     d.querySelectorAll('button').forEach(b => b.onclick = () => {
       const a = b.dataset.a;
@@ -451,7 +525,7 @@ function renderClips() {
     });
     el.appendChild(d);
   });
-  $('total').textContent = clips.length + ' clip' + (clips.length === 1 ? '' : 's') + ' · ' + clips.reduce((a, c) => a + c.len, 0) + 's';
+  $('total').textContent = clips.length + ' clip' + (clips.length === 1 ? '' : 's') + ', ' + clips.reduce((a, c) => a + c.len, 0) + 's';
   $('exportBtn').disabled = $('previewBtn').disabled = !clips.length;
 }
 
@@ -460,6 +534,7 @@ for (const [segId, key] of [['fmtSeg', 'fmt'], ['fitSeg', 'fit'], ['audSeg', 'au
   $(segId).querySelectorAll('button').forEach(b => b.onclick = () => {
     $(segId).querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); opts[key] = b.dataset.v;
     if (key === 'fmt') setStageShape();
+    stageDirty = true;
   });
 }
 
@@ -606,7 +681,7 @@ async function run(record) {
     $('msg').textContent = 'Something went wrong: ' + (err.message || err);
     setBtns([['Close', 'ghost', closeModal]]);
   }
-  busy = false;
+  busy = false; unload(rv);
 }
 
 let downloads = null;
@@ -680,7 +755,7 @@ async function openFramer(c, s) {
   })();
 }
 function closeFramer() {
-  fRun++; fv.pause(); $('framer').classList.remove('on');
+  fRun++; unload(fv); $('framer').classList.remove('on');
   if (fClip && fClip.frame && fClip.frame.z === 1 && !fClip.frame.x && !fClip.frame.y) fClip.frame = null;
   renderClips();
 }
@@ -732,7 +807,7 @@ attachPinch(scv, {
   start: () => { $('pinchHint').style.opacity = 0; }
 });
 $('frameReset').onclick = () => {
-  if (!cur) return; cur.frame = null; updateFrameReset();
+  if (!cur) return; cur.frame = null; updateFrameReset(); stageDirty = true;
   if (cur.type === 'image') clips.forEach(c => { if (c.srcId === cur.id) c.frame = null; });
   renderClips();
 };
@@ -741,7 +816,7 @@ setTimeout(() => { $('pinchHint').style.opacity = 0; }, 9000);
 $('lenSeg').querySelectorAll('button').forEach(b => b.onclick = () => {
   $('lenSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
   LEN = +b.dataset.v; if (cur && cur.type !== 'image') { selStart = clamp(selStart); renderTrack(); if (looping) startLoop(); }
-  toast('New clips will be ' + LEN + 's');
+  toast('New clips: ' + LEN + ' second' + (LEN > 1 ? 's' : ''));
 });
 $('previewBtn').onclick = () => run(false);
 $('exportBtn').onclick = () => run(true);
