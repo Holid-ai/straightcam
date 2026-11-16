@@ -181,15 +181,28 @@ function once(el, ev, ms = 8000) {
     el.addEventListener(ev, h); el.addEventListener('error', e);
   });
 }
+// iPhone Safari won't load video data until play() is called, so we wait for metadata only,
+// then "prime" a frame with a quick play/pause if needed.
 async function loadSrc(v, url) {
-  if (v.dataset.url === url && v.readyState >= 2) return;
-  v.dataset.url = url; v.src = url;
-  await once(v, 'loadeddata', 15000);
+  if (v.dataset.url !== url) { v.dataset.url = url; v.src = url; }
+  if (v.readyState < 1) {
+    try { await once(v, 'loadedmetadata', 20000); }
+    catch (e) { v.dataset.url = ''; throw e; }
+  }
+  await primeFrame(v);
+}
+async function primeFrame(v) {
+  if (v.readyState >= 2) return;
+  const p = once(v, 'loadeddata', 6000).catch(() => {});
+  try { await v.play(); } catch (e) {}
+  v.pause();
+  if (v.readyState < 2) await p;
 }
 async function seek(v, t) {
   if (Math.abs(v.currentTime - t) < 0.001 && v.readyState >= 2) return;
   const p = once(v, 'seeked', 5000).catch(() => {});
   v.currentTime = t; await p;
+  if (v.readyState < 2) await once(v, 'canplay', 3000).catch(() => {});
 }
 
 // ---- frame grabbing (queued on hidden thumb video) ----
@@ -205,7 +218,17 @@ function grab(url, t, w = 160) {
   });
 }
 function probe(url) {
-  return queue(async () => { await loadSrc(tv, url); return { duration: tv.duration, w: tv.videoWidth, h: tv.videoHeight }; });
+  return queue(async () => {
+    try { await loadSrc(tv, url); return { duration: tv.duration, w: tv.videoWidth, h: tv.videoHeight }; }
+    catch (e) {
+      // fallback: a brand-new video element with a longer wait (helps with slow Google Photos files)
+      const v = document.createElement('video');
+      v.muted = true; v.playsInline = true; v.preload = 'metadata'; v.style.cssText = 'position:fixed;width:2px;height:2px;opacity:.01;left:0;top:0;pointer-events:none';
+      document.body.appendChild(v);
+      try { v.src = url; await once(v, 'loadedmetadata', 30000); return { duration: v.duration, w: v.videoWidth, h: v.videoHeight }; }
+      finally { v.removeAttribute('src'); v.load(); v.remove(); }
+    }
+  });
 }
 
 // ---- sources ----
@@ -223,7 +246,7 @@ $('file').onchange = async e => {
       if (s.type === 'image') { await loadImage(s); addClip(s, 0, true); }
       else {
         const m = await probe(s.url); s.duration = isFinite(m.duration) ? m.duration : 0;
-        s.thumb = await grab(s.url, Math.min(1, s.duration / 3), 150);
+        try { s.thumb = await grab(s.url, Math.min(1, s.duration / 3), 150); } catch (e) {} // no thumbnail is fine
       }
     } catch (err) { s.bad = true; }
     renderSources();
@@ -232,7 +255,7 @@ $('file').onchange = async e => {
   const nImg = files.filter(f => f.type.startsWith('image/')).length;
   if (nImg) toast(nImg + ' photo' + (nImg > 1 ? 's' : '') + ' added to your edit as ' + LEN + 's clips');
   const bad = sources.filter(s => s.bad).length;
-  if (bad) toast(bad + " video(s) couldn't be read by this browser");
+  if (bad) toast(bad + " video(s) didn't load. Tap them to try again");
 };
 
 async function loadImage(s) {
@@ -249,8 +272,13 @@ function renderSources() {
   sources.forEach(s => {
     const d = document.createElement('div'); d.className = 'src' + (s === cur ? ' on' : '');
     const n = clips.filter(c => c.srcId === s.id).length;
-    d.innerHTML = (s.thumb ? `<img src="${s.thumb}">` : `<div class="ph"></div>`) + `<div class="n">${s.bad ? '⚠ unreadable' : s.type === 'image' ? 'photo' : fmt(s.duration)}</div>` + (n ? `<div class="cnt">${n}</div>` : '');
-    d.onclick = () => { if (!s.bad) selectSource(s); };
+    d.innerHTML = (s.thumb ? `<img src="${s.thumb}">` : `<div class="ph"></div>`) + `<div class="n">${s.bad ? '↻ tap to retry' : s.type === 'image' ? 'photo' : fmt(s.duration)}</div>` + (n ? `<div class="cnt">${n}</div>` : '');
+    d.onclick = async () => {
+      if (!s.bad) return selectSource(s);
+      toast('Trying that video again…');
+      try { const m = await probe(s.url); s.duration = isFinite(m.duration) ? m.duration : 0; s.bad = false; renderSources(); selectSource(s); grab(s.url, Math.min(1, s.duration / 3), 150).then(t => { s.thumb = t; renderSources(); }).catch(() => {}); }
+      catch (e) { toast("Couldn't open that video. Try saving it to your phone from Google Photos first"); }
+    };
     el.appendChild(d);
   });
   const a = document.createElement('button'); a.className = 'addsrc'; a.textContent = '+'; a.onclick = () => $('file').click();
@@ -460,13 +488,16 @@ let resultURL = null, resultBlob = null, resultExt = 'mp4';
 async function run(record) {
   if (busy || !clips.length) return;
   busy = true; abort = false;
+  const firstSrc = sources.find(x => x.id === clips[0].srcId && x.type !== 'image');
+  if (firstSrc && rv.dataset.url !== firstSrc.url) { rv.dataset.url = firstSrc.url; rv.src = firstSrc.url; }
+  const unlock = firstSrc ? rv.play().then(() => rv.pause()).catch(() => {}) : Promise.resolve();
   const [W, H] = SIZES[opts.fmt]; cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   openModal([['Cancel', 'ghost', closeModal]]);
   $('msg').textContent = record ? 'Building your video… keep this screen open' : 'Previewing…';
   let rec = null, chunks = [], mime = '';
   try {
-    ensureAudio(); await actx.resume();
+    ensureAudio(); const resumed = actx.resume(); await unlock; await resumed;
     outGain.gain.value = opts.aud === 'on' ? 1 : 0;
     monGain.gain.value = record ? 0 : (opts.aud === 'on' ? 1 : 0);
     if (record) {
