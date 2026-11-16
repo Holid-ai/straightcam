@@ -36,8 +36,10 @@ button:disabled{opacity:.35;cursor:default}
 .src .n{font-size:10px;color:var(--dim);margin-top:3px;text-align:center}
 .src .cnt{position:absolute;top:4px;right:4px;background:var(--acc);color:#111;font-size:11px;font-weight:700;border-radius:9px;padding:1px 6px}
 .addsrc{flex:0 0 auto;width:74px;height:74px;border-radius:10px;border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--dim);cursor:pointer;background:none}
-.stage{background:#000;border-radius:16px;overflow:hidden;position:relative;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center}
-.stage video{width:100%;height:100%;object-fit:contain}
+.stage{background:#000;border-radius:16px;overflow:hidden;position:relative;aspect-ratio:9/16;margin:0 auto;display:flex;align-items:center;justify-content:center}
+#scv{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.chip{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.6);font-size:12px;font-weight:700;padding:6px 10px;border-radius:9px}
+.pinchHint{position:absolute;left:50%;bottom:62px;transform:translateX(-50%);background:rgba(0,0,0,.6);font-size:12px;padding:6px 10px;border-radius:9px;pointer-events:none;white-space:nowrap;transition:opacity .4s}
 .playbtn{position:absolute;left:10px;bottom:10px;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.55);font-size:18px}
 .tc{position:absolute;right:10px;bottom:12px;background:rgba(0,0,0,.55);padding:5px 9px;border-radius:8px;font-size:12px;font-variant-numeric:tabular-nums}
 .track{position:relative;height:62px;margin-top:10px;border-radius:10px;overflow:hidden;background:#222;touch-action:none;cursor:pointer;user-select:none}
@@ -101,8 +103,9 @@ button:disabled{opacity:.35;cursor:default}
 
   <div class="label"><span id="srcName">—</span></div>
   <div class="stage">
-    <video id="pv" playsinline preload="auto" muted></video>
-    <img id="pimg" hidden style="width:100%;height:100%;object-fit:contain">
+    <canvas id="scv"></canvas>
+    <button class="chip" id="frameReset" hidden>Reset frame</button>
+    <div class="pinchHint" id="pinchHint">✋ Pinch &amp; drag the picture to frame it</div>
     <img id="scrubImg" hidden style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000">
     <div id="scrubLbl" hidden style="position:absolute;top:10px;left:50%;transform:translateX(-50%);background:var(--acc);color:#111;font-weight:700;padding:6px 12px;border-radius:10px;font-size:14px"></div>
     <button class="playbtn" id="playBtn">▶</button>
@@ -166,6 +169,7 @@ button:disabled{opacity:.35;cursor:default}
 
 <video id="rv" playsinline preload="auto"></video>
 <video id="tv" playsinline preload="auto" muted></video>
+<video id="pv" playsinline preload="auto" muted style="position:fixed;width:2px;height:2px;opacity:.01;left:0;top:0;pointer-events:none"></video>
 <video id="fv" playsinline preload="auto" muted style="position:fixed;width:2px;height:2px;opacity:.01;left:0;top:0;pointer-events:none"></video>
 <div class="toast" id="toast"></div>
 
@@ -304,9 +308,9 @@ async function selectSource(s, start = 0) {
   renderSources();
   $('srcName').textContent = s.name;
   const isImg = s.type === 'image';
-  $('vidOnly').hidden = isImg; pv.hidden = isImg; $('playBtn').hidden = isImg; $('tc').hidden = isImg;
-  $('imgOnly').hidden = !isImg; $('pimg').hidden = !isImg;
-  if (isImg) { $('pimg').src = s.url; return; }
+  $('vidOnly').hidden = isImg; $('playBtn').hidden = isImg; $('tc').hidden = isImg;
+  $('imgOnly').hidden = !isImg; updateFrameReset();
+  if (isImg) return;
   pv.src = s.url;
   try { await once(pv, 'loadedmetadata', 15000); } catch (e) { return; }
   if (cur !== s) return;
@@ -397,7 +401,19 @@ $('fwd').onclick = () => { if (cur) { selStart = clamp(selStart + 0.5); renderTr
 $('playBtn').onclick = () => { if (pv.paused) startLoop(); else { pv.pause(); looping = false; } setPlayIcon(); };
 function setPlayIcon() { $('playBtn').textContent = pv.paused ? '▶' : '❚❚'; }
 pv.addEventListener('play', setPlayIcon); pv.addEventListener('pause', setPlayIcon);
+const scv = $('scv'), sctx = scv.getContext('2d');
+function setStageShape() {
+  const [W, H] = SIZES[opts.fmt], st = document.querySelector('.stage');
+  st.style.aspectRatio = W + ' / ' + H; st.style.width = `min(100%, calc(44vh * ${W / H}))`;
+  scv.width = Math.round(W * 0.6); scv.height = Math.round(H * 0.6);
+}
+setStageShape();
+const stageEl = () => cur && cur.type === 'image' ? cur.img : pv;
 (function tick() {
+  if (cur && !$('editView').hidden) {
+    const el = stageEl();
+    if (el && (cur.type === 'image' || pv.readyState >= 2)) drawFrame(sctx, el, scv.width, scv.height, 'none', 0, cur.frame);
+  }
   if (cur && cur.duration && cur.type !== 'image') {
     if (looping && !pv.paused && pv.currentTime >= selStart + LEN) pv.currentTime = selStart;
     $('head').style.left = (pv.currentTime / cur.duration * 100) + '%';
@@ -408,7 +424,7 @@ pv.addEventListener('play', setPlayIcon); pv.addEventListener('pause', setPlayIc
 
 // ---- clips ----
 async function addClip(s, start, quiet) {
-  const c = { id: ++uid, srcId: s.id, start, len: LEN, thumb: s.type === 'image' ? s.thumb : null, motion: randMotion() };
+  const c = { id: ++uid, srcId: s.id, start, len: LEN, frame: s.frame ? { ...s.frame } : null, thumb: s.type === 'image' ? s.thumb : null, motion: randMotion() };
   clips.push(c); renderClips(); renderTrack(); renderSources();
   if (!quiet && clips.length === 1) toast('Added! Tap the clip below to pinch & frame it');
   else if (!quiet) toast('Added clip ' + clips.length + (s.type === 'image' ? ' (photo)' : ' (' + fmt(start) + ')'));
@@ -443,6 +459,7 @@ function renderClips() {
 for (const [segId, key] of [['fmtSeg', 'fmt'], ['fitSeg', 'fit'], ['audSeg', 'aud'], ['ordSeg', 'ord'], ['motSeg', 'mot']]) {
   $(segId).querySelectorAll('button').forEach(b => b.onclick = () => {
     $(segId).querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); opts[key] = b.dataset.v;
+    if (key === 'fmt') setStageShape();
   });
 }
 
@@ -674,26 +691,52 @@ const fEl = () => fSrc.type === 'image' ? fSrc.img : fv;
 function zoomBy(k) { if (!fClip) return; const f = fClip.frame; f.z *= k; clampFrame(f, fEl(), fcv.width, fcv.height); }
 $('fZoomIn').onclick = () => zoomBy(1.2); $('fZoomOut').onclick = () => zoomBy(1 / 1.2);
 $('fJump').onclick = () => { const c = fClip, s = fSrc; closeFramer(); selectSource(s, c.start).then(startLoop); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-const ptrs = new Map(); let gStart = null;
-function gesture() {
-  const pts = [...ptrs.values()];
-  const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length, cy = pts.reduce((a, p) => a + p.y, 0) / pts.length;
-  const d = pts.length > 1 ? Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) : 0;
-  return { cx, cy, d, n: pts.length };
+// Pinch/drag on any canvas. api: get() -> frame, set(frame), el() -> media element
+function attachPinch(cv, api) {
+  const ptrs = new Map(); let gStart = null;
+  const gesture = () => {
+    const pts = [...ptrs.values()];
+    const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length, cy = pts.reduce((a, p) => a + p.y, 0) / pts.length;
+    const d = pts.length > 1 ? Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) : 0;
+    return { cx, cy, d, n: pts.length };
+  };
+  const cur0 = () => ({ ...(api.get() || { z: 1, x: 0, y: 0 }) });
+  cv.addEventListener('pointerdown', e => { if (!api.ok()) return; cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); gStart = { g: gesture(), f: cur0() }; api.start && api.start(); });
+  cv.addEventListener('pointermove', e => {
+    if (!ptrs.has(e.pointerId) || !gStart) return;
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const g = gesture(); if (g.n !== gStart.g.n) { gStart = { g, f: cur0() }; return; }
+    const r = cv.getBoundingClientRect(), f0 = gStart.f;
+    const f = { z: f0.z, x: f0.x + (g.cx - gStart.g.cx) / r.width, y: f0.y + (g.cy - gStart.g.cy) / r.height };
+    if (g.n > 1 && gStart.g.d > 0) f.z = f0.z * g.d / gStart.g.d;
+    api.set(clampFrame(f, api.el(), cv.width, cv.height));
+  });
+  const up = e => { ptrs.delete(e.pointerId); gStart = ptrs.size ? { g: gesture(), f: cur0() } : null; };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  cv.addEventListener('wheel', e => {
+    if (!api.ok()) return; e.preventDefault();
+    const f = cur0(); f.z *= e.deltaY < 0 ? 1.1 : 1 / 1.1; api.set(clampFrame(f, api.el(), cv.width, cv.height));
+  }, { passive: false });
 }
-fcv.addEventListener('pointerdown', e => { fcv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); gStart = { g: gesture(), f: { ...fClip.frame } }; });
-fcv.addEventListener('pointermove', e => {
-  if (!ptrs.has(e.pointerId) || !fClip || !gStart) return;
-  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  const g = gesture(); if (g.n !== gStart.g.n) { gStart = { g, f: { ...fClip.frame } }; return; }
-  const r = fcv.getBoundingClientRect(), f0 = gStart.f;
-  const f = { z: f0.z, x: f0.x + (g.cx - gStart.g.cx) / r.width, y: f0.y + (g.cy - gStart.g.cy) / r.height };
-  if (g.n > 1 && gStart.g.d > 0) f.z = f0.z * g.d / gStart.g.d;
-  fClip.frame = clampFrame(f, fEl(), fcv.width, fcv.height);
+attachPinch(fcv, { ok: () => !!fClip, get: () => fClip.frame, set: f => { fClip.frame = f; }, el: fEl });
+// main preview: framing applies to new clips from this video (and to this photo's clips)
+function updateFrameReset() { $('frameReset').hidden = !(cur && cur.frame); }
+attachPinch(scv, {
+  ok: () => !!cur && !cur.bad,
+  get: () => cur.frame,
+  set: f => {
+    cur.frame = f; updateFrameReset();
+    if (cur.type === 'image') { clips.forEach(c => { if (c.srcId === cur.id) c.frame = { ...f }; }); }
+  },
+  el: stageEl,
+  start: () => { $('pinchHint').style.opacity = 0; }
 });
-const ptrUp = e => { ptrs.delete(e.pointerId); gStart = ptrs.size ? { g: gesture(), f: { ...fClip.frame } } : null; };
-fcv.addEventListener('pointerup', ptrUp); fcv.addEventListener('pointercancel', ptrUp);
-fcv.addEventListener('wheel', e => { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.1 : 1 / 1.1); }, { passive: false });
+$('frameReset').onclick = () => {
+  if (!cur) return; cur.frame = null; updateFrameReset();
+  if (cur.type === 'image') clips.forEach(c => { if (c.srcId === cur.id) c.frame = null; });
+  renderClips();
+};
+setTimeout(() => { $('pinchHint').style.opacity = 0; }, 9000);
 
 $('lenSeg').querySelectorAll('button').forEach(b => b.onclick = () => {
   $('lenSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
