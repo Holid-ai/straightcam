@@ -1,8 +1,7 @@
-const C = 'fish-alive-v5';
-const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './logo.svg'];
-self.addEventListener('install', e => { e.waitUntil(caches.open(C).then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' }))))); self.skipWaiting(); });
-self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('fish-alive') && k !== C).map(k => caches.delete(k))))); self.clients.claim(); });
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET' || !e.request.url.startsWith(self.registration.scope)) return;
-  e.respondWith(fetch(e.request, { cache: 'no-store' }).then(r => { const cp = r.clone(); caches.open(C).then(c => c.put(e.request, cp)); return r; }).catch(() => caches.match(e.request)));
-});
+// Fish Alive moved to https://holid-ai.github.io/fish-alive/ — remove the old offline copy.
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil((async () => {
+  for (const k of await caches.keys()) if (k.startsWith('fish-alive') || k.startsWith('3s-edit')) await caches.delete(k);
+  await self.registration.unregister();
+  for (const c of await self.clients.matchAll()) c.navigate('https://holid-ai.github.io/fish-alive/');
+})()));
